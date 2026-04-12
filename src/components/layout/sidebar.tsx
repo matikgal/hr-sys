@@ -64,28 +64,28 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto no-scrollbar">
+      <nav className="flex-1 px-4 py-6 space-y-2.5 overflow-y-auto no-scrollbar">
         {navigation.map((item) => {
           const isActive = pathname.startsWith(item.href);
           return (
-            <Link key={item.name} href={item.href}>
+            <Link key={item.name} href={item.href} className="block mb-1 last:mb-0">
               <div
                 className={cn(
-                  "flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-300 group relative",
+                  "flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 group relative",
                   isActive 
-                    ? "bg-neutral-900 text-white shadow-lg shadow-neutral-200" 
-                    : "text-neutral-500 hover:bg-neutral-50 hover:text-black"
+                    ? "bg-neutral-900 text-white" 
+                    : "text-neutral-500 hover:bg-neutral-100 hover:text-black"
                 )}
               >
                 <item.icon className={cn(
-                  "shrink-0 size-5 transition-transform duration-300 group-hover:scale-110",
+                  "shrink-0 size-4 transition-colors duration-200",
                   isActive ? "text-white" : "text-neutral-400 group-hover:text-black"
                 )} strokeWidth={isActive ? 2 : 1.5} />
                 
                 {!isCollapsed && (
                   <span className={cn(
-                    "text-[15px] font-medium tracking-tight whitespace-nowrap",
-                    isActive ? "text-white" : "text-neutral-600"
+                    "text-[14px] font-medium tracking-tight whitespace-nowrap",
+                    isActive ? "text-white" : "text-neutral-700"
                   )}>{item.name}</span>
                 )}
 

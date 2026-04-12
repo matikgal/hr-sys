@@ -58,9 +58,9 @@ export function ActivityChart({ data, loading }: ActivityChartProps) {
               />
               <Bar 
                 dataKey="hours" 
-                fill="#000" 
-                radius={0} 
-                barSize={40}
+                fill="#171717" 
+                radius={[6, 6, 0, 0]} 
+                barSize={42}
               >
                 {data?.map((entry, index) => (
                   <Cell key={`cell-${index}`} fillOpacity={1} />
