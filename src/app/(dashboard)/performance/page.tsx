@@ -123,7 +123,7 @@ export default function PerformancePage() {
   ];
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 pb-20">
+    <div className="max-w-[1440px] mx-auto space-y-6 px-8 py-10 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Oceny i Wydajność</h1>

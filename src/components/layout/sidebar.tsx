@@ -1,27 +1,27 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Clock, 
-  CalendarDays, 
-  UserPlus, 
-  BarChart3, 
-  GraduationCap, 
-  HeartHandshake, 
-  FileText, 
+import {
+  LayoutDashboard,
+  Users,
+  Clock,
+  CalendarDays,
+  UserPlus,
+  BarChart3,
+  GraduationCap,
+  HeartHandshake,
+  FileText,
   Settings,
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Database
+  Database,
+  Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/auth-context';
-import { motion, AnimatePresence } from 'framer-motion';
 
 const navigation = [
   { name: 'Panel główny', href: '/dashboard', icon: LayoutDashboard },
@@ -36,64 +36,72 @@ const navigation = [
   { name: 'Ustawienia', href: '/settings', icon: Settings },
 ];
 
-export function Sidebar() {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+interface SidebarProps {
+  collapsed: boolean;
+  onCollapsedChange: (v: boolean) => void;
+}
+
+export function Sidebar({ collapsed, onCollapsedChange }: SidebarProps) {
   const pathname = usePathname();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
+
+  const initials = user?.displayName
+    ? user.displayName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+    : 'HR';
 
   return (
     <aside
       className={cn(
-        "relative flex flex-col h-screen bg-white border-r border-neutral-100 transition-all duration-500 ease-in-out z-20",
-        isCollapsed ? "w-20" : "w-72"
+        "flex flex-col h-full",
+        "border border-sidebar-border bg-sidebar",
+        "rounded-[18px]",
+        "shadow-[0_6px_20px_rgba(14,16,20,0.06),0_1px_2px_rgba(14,16,20,0.04)]",
+        "overflow-hidden",
       )}
     >
-      {/* Logo Area - Simplified & Elegant */}
+      {/* Brand */}
       <div className={cn(
-        "flex items-center h-20 px-8 border-b border-neutral-50",
-        isCollapsed ? "justify-center px-0" : "justify-start"
+        "flex items-center border-b border-sidebar-border shrink-0",
+        collapsed ? "justify-center px-0 py-4" : "px-[18px] py-4"
       )}>
-        {!isCollapsed ? (
-          <div className="flex flex-col">
-            <span className="font-black text-xl tracking-tighter text-black uppercase">HR Nexus</span>
-            <div className="h-0.5 w-6 bg-black mt-0.5"></div>
+        <div className="flex items-center gap-2.5 overflow-hidden">
+          <div className="size-[30px] rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0">
+            <Building2 size={14} className="text-sidebar-primary-foreground" strokeWidth={2} />
           </div>
-        ) : (
-          <span className="font-black text-xl text-black">N</span>
-        )}
+          {!collapsed && (
+            <div className="overflow-hidden">
+              <span className="font-semibold text-[14px] text-sidebar-foreground whitespace-nowrap">HR Manager</span>
+              <div className="text-[9px] text-sidebar-foreground/40 font-medium tracking-widest uppercase whitespace-nowrap">Enterprise</div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-2.5 overflow-y-auto no-scrollbar">
+      <nav className="flex-1 px-[14px] py-3 space-y-0.5 overflow-y-auto no-scrollbar">
         {navigation.map((item) => {
           const isActive = pathname.startsWith(item.href);
           return (
-            <Link key={item.name} href={item.href} className="block mb-1 last:mb-0">
+            <Link key={item.name} href={item.href} className="block">
               <div
+                title={collapsed ? item.name : undefined}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 group relative",
-                  isActive 
-                    ? "bg-neutral-900 text-white" 
-                    : "text-neutral-500 hover:bg-neutral-100 hover:text-black"
+                  "flex items-center gap-2.5 px-2.5 py-[7px] rounded-lg transition-colors duration-150 cursor-pointer text-[13px] border",
+                  collapsed && "justify-center",
+                  isActive
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium border-transparent border-l-[3px] border-l-sidebar-primary pl-[7px]"
+                    : "text-sidebar-foreground/60 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground border-transparent"
                 )}
               >
-                <item.icon className={cn(
-                  "shrink-0 size-4 transition-colors duration-200",
-                  isActive ? "text-white" : "text-neutral-400 group-hover:text-black"
-                )} strokeWidth={isActive ? 2 : 1.5} />
-                
-                {!isCollapsed && (
-                  <span className={cn(
-                    "text-[14px] font-medium tracking-tight whitespace-nowrap",
-                    isActive ? "text-white" : "text-neutral-700"
-                  )}>{item.name}</span>
-                )}
-
-                {isActive && !isCollapsed && (
-                  <motion.div 
-                    layoutId="active-indicator"
-                    className="absolute right-2 size-1.5 bg-white rounded-full"
-                  />
+                <item.icon
+                  className={cn(
+                    "shrink-0 size-4",
+                    isActive ? "text-sidebar-primary" : "text-sidebar-foreground/40"
+                  )}
+                  strokeWidth={isActive ? 2 : 1.7}
+                />
+                {!collapsed && (
+                  <span className="whitespace-nowrap">{item.name}</span>
                 )}
               </div>
             </Link>
@@ -101,31 +109,57 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Footer Actions */}
-      <div className="p-4 border-t border-neutral-50 space-y-2 bg-neutral-50/30">
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="w-full flex items-center gap-4 px-4 py-3 text-neutral-500 hover:bg-white hover:text-black rounded-xl transition-all duration-300"
-        >
-          {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-          {!isCollapsed && <span className="text-[14px] font-medium">Zwiń menu</span>}
-        </button>
-        
-        <button
-          onClick={signOut}
-          className="w-full flex items-center gap-4 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl transition-all duration-300"
-        >
-          <LogOut size={20} />
-          {!isCollapsed && <span className="text-[14px] font-semibold">Wyloguj się</span>}
-        </button>
-
-        {!isCollapsed && (
+      {/* Footer */}
+      <div className="px-[14px] pb-3 pt-2 border-t border-sidebar-border space-y-0.5 shrink-0">
+        {!collapsed && (
           <Link href="/admin/seed">
-            <div className="mt-2 px-4 py-3 rounded-xl bg-neutral-100 text-neutral-400 flex items-center gap-4 hover:bg-neutral-200 hover:text-neutral-600 transition-all">
-              <Database size={16} />
-              <span className="text-[12px] font-bold uppercase tracking-widest">Baza danych</span>
+            <div className="flex items-center gap-2.5 px-2.5 py-[7px] rounded-lg text-sidebar-foreground/40 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground transition-colors cursor-pointer text-[13px]">
+              <Database size={15} strokeWidth={1.7} />
+              <span className="font-medium">Baza danych</span>
             </div>
           </Link>
+        )}
+
+        <button
+          onClick={() => onCollapsedChange(!collapsed)}
+          title={collapsed ? "Rozwiń menu" : "Zwiń menu"}
+          className={cn(
+            "w-full flex items-center gap-2.5 px-2.5 py-[7px] rounded-lg text-sidebar-foreground/40 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground transition-colors text-[13px]",
+            collapsed && "justify-center"
+          )}
+        >
+          {collapsed ? <ChevronRight size={15} strokeWidth={1.7} /> : <ChevronLeft size={15} strokeWidth={1.7} />}
+          {!collapsed && <span className="font-medium text-sidebar-foreground/60">Zwiń menu</span>}
+        </button>
+
+        {/* User card */}
+        {!collapsed && (
+          <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-sidebar-accent/40 transition-colors cursor-pointer mt-1">
+            <div className="size-7 rounded-full bg-sidebar-primary flex items-center justify-center shrink-0">
+              <span className="text-[10px] font-bold text-sidebar-primary-foreground">{initials}</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[12px] font-medium text-sidebar-foreground truncate">{user?.displayName || 'Administrator'}</p>
+              <p className="text-[10px] text-sidebar-foreground/50 truncate">{user?.role || 'Dyrektor HR'}</p>
+            </div>
+            <button
+              onClick={signOut}
+              title="Wyloguj się"
+              className="text-sidebar-foreground/30 hover:text-destructive transition-colors shrink-0"
+            >
+              <LogOut size={13} strokeWidth={1.7} />
+            </button>
+          </div>
+        )}
+
+        {collapsed && (
+          <button
+            onClick={signOut}
+            className="w-full flex items-center justify-center px-2.5 py-[7px] rounded-lg text-sidebar-foreground/40 hover:bg-destructive/10 hover:text-destructive transition-colors"
+            title="Wyloguj się"
+          >
+            <LogOut size={15} strokeWidth={1.7} />
+          </button>
         )}
       </div>
     </aside>

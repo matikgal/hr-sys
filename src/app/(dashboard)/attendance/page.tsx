@@ -113,30 +113,30 @@ export default function AttendancePage() {
   };
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-8 pb-12 pt-4 px-6">
+    <div className="max-w-[1440px] mx-auto space-y-8 pb-12 px-8 py-10">
       {/* Crisp Header */}
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-200 pb-6">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Czas i obecność</h1>
-          <p className="text-sm text-neutral-500 mt-1">Zarządzanie czasem pracy i rejestracja zdarzeń</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Czas i obecność</h1>
+          <p className="text-sm text-muted-foreground mt-1">Zarządzanie czasem pracy i rejestracja zdarzeń</p>
         </div>
         <div className="flex items-center gap-2">
           {currentEmployee && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-neutral-50 border border-neutral-200 rounded-md">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-muted border border-border rounded-md">
               <span className="size-2 bg-emerald-500 rounded-full animate-pulse"></span>
-              <span className="text-xs font-bold text-neutral-700 uppercase tracking-tight">
+              <span className="text-xs font-bold text-foreground/80 uppercase tracking-tight">
                 {currentEmployee.firstName} {currentEmployee.lastName}
               </span>
             </div>
           )}
-          <Button variant="outline" size="sm" className="h-9 rounded-md border-neutral-200 font-medium">
+          <Button variant="outline" size="sm" className="h-9 rounded-md border-border font-medium">
             <History size={14} className="mr-2" /> Raporty
           </Button>
         </div>
       </header>
 
       {/* Stats Row */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0 border border-neutral-200 rounded-md divide-y sm:divide-y-0 sm:divide-x divide-neutral-200 overflow-hidden bg-white">
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0 border border-border rounded-md divide-y sm:divide-y-0 sm:divide-x divide-border overflow-hidden bg-card">
         <StatCell 
           label="Dzisiejszy status" 
           value={loading ? "..." : (isWorking ? "W pracy" : "Poza pracą")} 
@@ -165,20 +165,20 @@ export default function AttendancePage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Registration Panel */}
         <div className="lg:col-span-8">
-          <div className="bg-white border border-neutral-200 rounded-md overflow-hidden h-full">
-            <div className="px-6 py-4 border-b border-neutral-200 bg-neutral-50/30 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-neutral-900">Rejestracja zdarzeń</h3>
+          <div className="bg-card border border-border rounded-md overflow-hidden h-full">
+            <div className="px-6 py-4 border-b border-border bg-accent/30 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-foreground">Rejestracja zdarzeń</h3>
               <div className="flex items-center gap-1.5">
-                <span className={cn("size-1.5 rounded-full", isWorking ? "bg-emerald-500 animate-pulse" : "bg-neutral-300")}></span>
-                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tight">System aktywny</span>
+                <span className={cn("size-1.5 rounded-full", isWorking ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/30")}></span>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">System aktywny</span>
               </div>
             </div>
             <div className="p-8 flex flex-col items-center justify-center text-center space-y-8">
               <div className="space-y-2">
-                <div className="text-5xl font-black tracking-tighter text-neutral-900">
+                <div className="text-5xl font-black tracking-tighter text-foreground">
                   {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
-                <p className="text-xs font-bold text-neutral-400 uppercase tracking-[0.2em]">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em]">
                   {new Date().toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' })}
                 </p>
               </div>
@@ -189,8 +189,8 @@ export default function AttendancePage() {
                   className={cn(
                     "h-12 px-8 rounded-md font-bold transition-all shadow-sm",
                     isWorking 
-                      ? "bg-neutral-100 text-neutral-400 cursor-not-allowed border-neutral-200" 
-                      : "bg-black text-white hover:bg-neutral-800"
+                      ? "bg-muted text-muted-foreground cursor-not-allowed border-border" 
+                      : "bg-primary text-primary-foreground hover:bg-primary/90"
                   )}
                   onClick={handleClockIn}
                   disabled={loading || actionLoading || !!isWorking}
@@ -201,9 +201,9 @@ export default function AttendancePage() {
                   size="lg" 
                   variant="outline"
                   className={cn(
-                    "h-12 px-8 rounded-md font-bold transition-all shadow-sm border-neutral-200",
+                    "h-12 px-8 rounded-md font-bold transition-all shadow-sm border-border",
                     !isWorking 
-                      ? "text-neutral-300 border-neutral-100" 
+                      ? "text-muted-foreground/50 border-border/50" 
                       : "text-red-600 hover:bg-red-50 hover:border-red-200 hover:text-red-700"
                   )}
                   onClick={handleClockOut}
@@ -214,9 +214,9 @@ export default function AttendancePage() {
               </div>
 
               {todayRecord && todayRecord.events.length > 0 && (
-                <div className="flex items-center gap-2 text-xs font-medium text-neutral-500 bg-neutral-50 px-3 py-1.5 rounded-full border border-neutral-100">
+                <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground bg-muted px-3 py-1.5 rounded-full border border-border/50">
                   <CheckCircle2 size={14} className="text-emerald-500" />
-                  Ostatnie wejście: <span className="text-neutral-900 font-bold">{formatTime(todayRecord.events[todayRecord.events.length - 1].timestamp)}</span>
+                  Ostatnie wejście: <span className="text-foreground font-bold">{formatTime(todayRecord.events[todayRecord.events.length - 1].timestamp)}</span>
                 </div>
               )}
             </div>
@@ -225,9 +225,9 @@ export default function AttendancePage() {
 
         {/* Info Sidebar */}
         <div className="lg:col-span-4">
-          <div className="bg-white border border-neutral-200 rounded-md overflow-hidden h-full">
-            <div className="px-6 py-4 border-b border-neutral-200 bg-neutral-50/30">
-              <h3 className="text-sm font-bold text-neutral-900">Informacje systemowe</h3>
+          <div className="bg-card border border-border rounded-md overflow-hidden h-full">
+            <div className="px-6 py-4 border-b border-border bg-accent/30">
+              <h3 className="text-sm font-bold text-foreground">Informacje systemowe</h3>
             </div>
             <div className="p-6 space-y-6">
               <div className="flex items-start gap-3">
@@ -235,27 +235,27 @@ export default function AttendancePage() {
                   <Info size={16} className="text-blue-500" />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm font-bold text-neutral-900">Automatyczne zamykanie</p>
-                  <p className="text-xs text-neutral-500 leading-relaxed font-medium">
+                  <p className="text-sm font-bold text-foreground">Automatyczne zamykanie</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed font-medium">
                     Pamiętaj o zarejestrowaniu wyjścia. System automatycznie zamyka sesje po 12 godzinach ciągłej aktywności.
                   </p>
                 </div>
               </div>
               
-              <div className="pt-6 border-t border-neutral-100">
-                <h4 className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-4">Twój grafik na dziś</h4>
+              <div className="pt-6 border-t border-border/50">
+                <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4">Twój grafik na dziś</h4>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-neutral-500 font-medium">Planowane wejście</span>
-                    <span className="text-neutral-900 font-bold italic">08:00</span>
+                    <span className="text-muted-foreground font-medium">Planowane wejście</span>
+                    <span className="text-foreground font-bold italic">08:00</span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-neutral-500 font-medium">Planowane wyjście</span>
-                    <span className="text-neutral-900 font-bold italic">16:00</span>
+                    <span className="text-muted-foreground font-medium">Planowane wyjście</span>
+                    <span className="text-foreground font-bold italic">16:00</span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-neutral-500 font-medium">Przerwa</span>
-                    <span className="text-neutral-900 font-bold italic">30 min</span>
+                    <span className="text-muted-foreground font-medium">Przerwa</span>
+                    <span className="text-foreground font-bold italic">30 min</span>
                   </div>
                 </div>
               </div>
@@ -265,35 +265,35 @@ export default function AttendancePage() {
       </div>
 
       {/* History Table */}
-      <div className="bg-white border border-neutral-200 rounded-md overflow-hidden">
-        <div className="px-6 py-4 border-b border-neutral-200 bg-neutral-50/30 flex items-center justify-between">
-          <h3 className="text-sm font-bold text-neutral-900">Historia obecności (ostatnie 30 dni)</h3>
-          <Button variant="ghost" size="sm" className="h-8 text-xs font-bold text-neutral-500 hover:text-black uppercase tracking-tight">
+      <div className="bg-card border border-border rounded-md overflow-hidden">
+        <div className="px-6 py-4 border-b border-border bg-accent/30 flex items-center justify-between">
+          <h3 className="text-sm font-bold text-foreground">Historia obecności (ostatnie 30 dni)</h3>
+          <Button variant="ghost" size="sm" className="h-8 text-xs font-bold text-muted-foreground hover:text-foreground uppercase tracking-tight">
             Pełna historia <ArrowRight size={14} className="ml-1" />
           </Button>
         </div>
         <Table>
-          <TableHeader className="bg-neutral-50/30">
-            <TableRow className="hover:bg-transparent border-neutral-200">
-              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 py-3 pl-6">Data</TableHead>
-              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 py-3">Wejście</TableHead>
-              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 py-3">Wyjście</TableHead>
-              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 py-3">Suma godzin</TableHead>
-              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 py-3">Zdarzenia</TableHead>
-              <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-neutral-500 py-3 pr-6">Status</TableHead>
+          <TableHeader className="bg-accent/30">
+            <TableRow className="hover:bg-transparent border-border">
+              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground py-3 pl-6">Data</TableHead>
+              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground py-3">Wejście</TableHead>
+              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground py-3">Wyjście</TableHead>
+              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground py-3">Suma godzin</TableHead>
+              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground py-3">Zdarzenia</TableHead>
+              <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-muted-foreground py-3 pr-6">Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               [1, 2, 3, 4, 5].map((i) => (
-                <TableRow key={i} className="border-neutral-100">
+                <TableRow key={i} className="border-border/50">
                   <TableCell colSpan={6} className="py-4 px-6"><Skeleton className="h-8 w-full" /></TableCell>
                 </TableRow>
               ))
             ) : history.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="py-12 text-center">
-                  <p className="text-sm font-medium text-neutral-500">Brak historii obecności.</p>
+                  <p className="text-sm font-medium text-muted-foreground">Brak historii obecności.</p>
                 </TableCell>
               </TableRow>
             ) : history.map((record) => {
@@ -301,34 +301,34 @@ export default function AttendancePage() {
               const lastOut = [...record.events].reverse().find(e => e.type === 'out');
               
               return (
-                <TableRow key={record.id} className="group hover:bg-neutral-50/50 transition-colors border-neutral-100">
-                  <TableCell className="py-3 pl-6 font-semibold text-sm text-neutral-900">
+                <TableRow key={record.id} className="group hover:bg-accent/50 transition-colors border-border/50">
+                  <TableCell className="py-3 pl-6 font-semibold text-sm text-foreground">
                     {record.date}
                   </TableCell>
-                  <TableCell className="py-3 text-sm text-neutral-600 font-medium">{firstIn ? formatTime(firstIn.timestamp) : '--:--'}</TableCell>
-                  <TableCell className="py-3 text-sm text-neutral-600 font-medium">{lastOut ? formatTime(lastOut.timestamp) : '--:--'}</TableCell>
-                  <TableCell className="py-3 text-sm font-black text-neutral-900">{record.totalHours}h</TableCell>
+                  <TableCell className="py-3 text-sm text-foreground/70 font-medium">{firstIn ? formatTime(firstIn.timestamp) : '--:--'}</TableCell>
+                  <TableCell className="py-3 text-sm text-foreground/70 font-medium">{lastOut ? formatTime(lastOut.timestamp) : '--:--'}</TableCell>
+                  <TableCell className="py-3 text-sm font-black text-foreground">{record.totalHours}h</TableCell>
                   <TableCell className="py-3">
                     <HoverCard openDelay={100}>
                       <HoverCardTrigger asChild>
-                        <button className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-neutral-100 text-[10px] font-bold text-neutral-600 uppercase tracking-tight hover:bg-neutral-200 transition-colors">
+                        <button className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-muted text-[10px] font-bold text-foreground/70 uppercase tracking-tight hover:bg-border transition-colors">
                           <MoreHorizontal size={12} /> {record.events.length} LOGI
                         </button>
                       </HoverCardTrigger>
-                      <HoverCardContent align="start" className="w-64 p-0 border-neutral-200 shadow-lg rounded-md overflow-hidden">
-                        <div className="bg-neutral-50 px-4 py-2 border-b border-neutral-200">
-                          <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Zdarzenia z dnia {record.date}</span>
+                      <HoverCardContent align="start" className="w-64 p-0 border-border shadow-lg rounded-md overflow-hidden">
+                        <div className="bg-muted px-4 py-2 border-b border-border">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Zdarzenia z dnia {record.date}</span>
                         </div>
                         <div className="p-2 max-h-48 overflow-y-auto">
                           {record.events.map((event, idx) => (
-                            <div key={idx} className="flex justify-between items-center px-2 py-1.5 hover:bg-neutral-50 rounded">
+                            <div key={idx} className="flex justify-between items-center px-2 py-1.5 hover:bg-muted rounded">
                               <span className={cn(
                                 "text-[9px] font-black px-1.5 py-0.5 rounded border uppercase tracking-tighter",
-                                event.type === 'in' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-neutral-50 text-neutral-600 border-neutral-200"
+                                event.type === 'in' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-muted text-foreground/70 border-border"
                               )}>
                                 {event.type === 'in' ? 'WEJŚCIE' : 'WYJŚCIE'}
                               </span>
-                              <span className="text-xs font-bold text-neutral-900">{formatTime(event.timestamp)}</span>
+                              <span className="text-xs font-bold text-foreground">{formatTime(event.timestamp)}</span>
                             </div>
                           ))}
                         </div>
@@ -352,18 +352,18 @@ function StatCell({ label, value, icon, trend, highlight }: any) {
   return (
     <div className="p-6">
       <div className="flex items-center gap-2 mb-2">
-        <div className="text-neutral-400">{icon}</div>
-        <span className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider">{label}</span>
+        <div className="text-muted-foreground">{icon}</div>
+        <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{label}</span>
       </div>
       <div className="flex items-baseline justify-between">
         <span className={cn(
           "text-3xl font-bold tracking-tight",
-          highlight ? "text-emerald-600" : "text-neutral-900"
+          highlight ? "text-emerald-600" : "text-foreground"
         )}>
           {value}
         </span>
         {trend && (
-          <span className="text-[10px] font-bold bg-neutral-100 text-neutral-600 px-1.5 py-0.5 rounded">
+          <span className="text-[10px] font-bold bg-muted text-foreground/70 px-1.5 py-0.5 rounded">
             {trend}
           </span>
         )}

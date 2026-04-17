@@ -2,8 +2,10 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Bell, Search, Settings, User, LogOut } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { Bell, Search, Settings, User, LogOut, Sun, Moon, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
+import { useTheme } from '@/lib/use-theme';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +14,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
 import { cn } from '@/lib/utils';
 import {
   Popover,
@@ -20,8 +21,26 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
+const PAGE_NAMES: Record<string, string> = {
+  '/dashboard': 'Panel główny',
+  '/employees': 'Pracownicy',
+  '/attendance': 'Czas pracy',
+  '/leaves': 'Urlopy',
+  '/recruitment': 'Rekrutacja',
+  '/performance': 'Oceny roczne',
+  '/learning': 'Szkolenia',
+  '/benefits': 'Benefity',
+  '/documents': 'Dokumenty',
+  '/settings': 'Ustawienia',
+  '/profile': 'Profil',
+};
+
 export function Header() {
   const { user, signOut } = useAuth();
+  const { theme, toggle } = useTheme();
+  const pathname = usePathname();
+
+  const pageName = Object.entries(PAGE_NAMES).find(([key]) => pathname.startsWith(key))?.[1] ?? 'HR Manager';
 
   const notifications = [
     { id: 1, title: "Nowy wniosek o urlop", time: "5 min temu", read: false },
@@ -29,84 +48,119 @@ export function Header() {
     { id: 3, title: "Zatwierdzono premię kwartalną", time: "1 dzień temu", read: true },
   ];
 
-  return (
-    <header className="h-16 border-b border-neutral-200 bg-white sticky top-0 z-10 px-6 flex items-center justify-between">
-      <div className="flex-1 max-w-xl">
-        <div className="relative group flex items-center">
-          <Search className="absolute left-3 text-neutral-400" size={14} />
-          <input 
-            placeholder="Szukaj pracowników, dokumentów, zadań..." 
-            className="pl-10 pr-4 bg-neutral-50 border border-neutral-200 rounded-md w-full max-w-sm h-9 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-neutral-900 focus:border-neutral-900 placeholder:text-neutral-400 transition-all"
-          />
-        </div>
-      </div>
+  const unread = notifications.filter(n => !n.read).length;
 
-      <div className="flex items-center gap-4">
+  const initials = user?.displayName
+    ? user.displayName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+    : 'HR';
+
+  return (
+    <header className="flex items-center justify-between px-8 pt-5 pb-2 bg-transparent shrink-0">
+      {/* Breadcrumb */}
+      <p className="text-[12px] text-muted-foreground tracking-[0.2px]">
+        HR Manager · <b className="text-foreground font-semibold font-sans">{pageName}</b> · Przegląd
+      </p>
+
+      <div className="flex items-center gap-2">
+        {/* Search */}
+        <div className="flex items-center gap-2 bg-card border border-border rounded-[10px] px-3 py-[7px] text-[13px] text-muted-foreground min-w-[220px] cursor-text hover:border-border/80 transition-colors">
+          <Search size={13} strokeWidth={1.8} className="shrink-0" />
+          <span>Szukaj pracowników, raportów…</span>
+          <kbd className="ml-auto text-[10px] bg-background border border-border rounded px-1 py-0.5 font-mono leading-none">⌘K</kbd>
+        </div>
+
+        {/* Dark mode toggle */}
+        <button
+          onClick={toggle}
+          aria-label="Przełącz motyw"
+          className="size-[34px] flex items-center justify-center rounded-[10px] border border-border bg-card text-muted-foreground hover:bg-accent transition-colors"
+        >
+          {theme === 'dark' ? <Sun size={15} strokeWidth={1.8} /> : <Moon size={15} strokeWidth={1.8} />}
+        </button>
+
+        {/* Notifications */}
         <Popover>
           <PopoverTrigger asChild>
-            <button className="relative size-9 flex items-center justify-center rounded-md border border-neutral-200 text-neutral-500 hover:text-black hover:bg-neutral-50 transition-all">
-              <Bell size={16} />
-              <span className="absolute top-2 right-2.5 w-1.5 h-1.5 bg-red-500 rounded-full border border-white"></span>
+            <button className="relative size-[34px] flex items-center justify-center rounded-[10px] border border-border bg-card text-muted-foreground hover:bg-accent transition-colors">
+              <Bell size={15} strokeWidth={1.8} />
+              {unread > 0 && (
+                <span className="absolute top-[7px] right-[7px] w-[7px] h-[7px] bg-amber-500 rounded-full border-2 border-card" />
+              )}
             </button>
           </PopoverTrigger>
-          <PopoverContent className="w-80 p-0 rounded-md border-neutral-200 shadow-xl mt-2 overflow-hidden" align="end">
-            <div className="p-4 border-b border-neutral-100 bg-neutral-50/50">
-              <h4 className="text-[11px] font-bold uppercase tracking-wider text-neutral-900">Powiadomienia</h4>
-            </div>
-            <div className="max-h-80 overflow-y-auto">
-              {notifications.length > 0 ? (
-                notifications.map((n) => (
-                  <div key={n.id} className={cn(
-                    "p-4 border-b border-neutral-50 last:border-0 hover:bg-neutral-50 transition-colors cursor-pointer",
-                    !n.read && "bg-blue-50/30"
-                  )}>
-                    <p className="text-xs font-semibold text-neutral-900 leading-normal">{n.title}</p>
-                    <p className="text-[10px] text-neutral-400 mt-1 font-medium">{n.time}</p>
-                  </div>
-                ))
-              ) : (
-                <div className="p-8 text-center text-xs text-neutral-400">Brak nowych powiadomień</div>
+          <PopoverContent className="w-80 p-0 rounded-xl border-border bg-popover shadow-lg mt-2 overflow-hidden" align="end">
+            <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+              <h4 className="text-[12px] font-semibold text-foreground uppercase tracking-wide">Powiadomienia</h4>
+              {unread > 0 && (
+                <span className="text-[10px] font-semibold bg-muted text-foreground px-2 py-0.5 rounded-full">
+                  {unread} nowe
+                </span>
               )}
             </div>
-            <div className="p-3 border-t border-neutral-100 text-center bg-neutral-50/30">
-              <button className="text-[10px] font-bold text-neutral-500 hover:text-black uppercase tracking-widest">Wyczyść wszystko</button>
+            <div className="max-h-72 overflow-y-auto">
+              {notifications.map((n) => (
+                <div key={n.id} className={cn(
+                  "px-4 py-3 border-b border-border last:border-0 hover:bg-accent transition-colors cursor-pointer",
+                  !n.read && "bg-accent/50"
+                )}>
+                  <div className="flex items-start gap-2.5">
+                    {!n.read && <div className="mt-1.5 size-1.5 rounded-full bg-primary shrink-0" />}
+                    <div className={cn(!n.read ? "" : "pl-4")}>
+                      <p className="text-[13px] font-medium text-foreground leading-snug">{n.title}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{n.time}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="px-4 py-3 border-t border-border text-center">
+              <button className="text-[11px] font-semibold text-muted-foreground hover:text-foreground uppercase tracking-wide transition-colors">
+                Wyczyść wszystko
+              </button>
             </div>
           </PopoverContent>
         </Popover>
-        
-        <div className="h-6 w-[1px] bg-neutral-200"></div>
 
+        {/* Messages */}
+        <button className="size-[34px] flex items-center justify-center rounded-[10px] border border-border bg-card text-muted-foreground hover:bg-accent transition-colors">
+          <MessageSquare size={15} strokeWidth={1.8} />
+        </button>
+
+        {/* Profile — minimal avatar only */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-3 p-1 rounded-md hover:bg-neutral-50 transition-all">
-              <div className="text-right hidden sm:block px-1">
-                <p className="text-[11px] font-bold text-neutral-900 leading-none uppercase tracking-tight">{user?.displayName || "Administrator"}</p>
-                <p className="text-[10px] text-neutral-400 mt-1 uppercase tracking-widest font-medium">{user?.role || "Dyrektor HR"}</p>
-              </div>
-              <div className="size-8 rounded-md border border-neutral-200 overflow-hidden bg-neutral-100 shrink-0">
-                <img src={user?.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${user?.displayName || "Admin"}`} alt="avatar" className="size-full object-cover" />
-              </div>
+            <button className="size-[34px] flex items-center justify-center rounded-[10px] bg-primary hover:bg-primary/90 transition-colors shrink-0">
+              {user?.photoURL ? (
+                <img src={user.photoURL} alt="avatar" className="size-full object-cover rounded-[10px]" />
+              ) : (
+                <span className="text-[11px] font-bold text-primary-foreground">{initials}</span>
+              )}
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56 rounded-md border-neutral-200 shadow-xl mt-2 p-1" align="end">
-            <DropdownMenuLabel className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 px-3 py-2">Konto</DropdownMenuLabel>
-            <DropdownMenuSeparator />
+          <DropdownMenuContent className="w-52 rounded-xl border-border bg-popover shadow-lg mt-2 p-1.5" align="end">
+            <DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-2.5 py-1.5">
+              {user?.displayName || 'Administrator'}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-border" />
             <Link href="/profile">
-              <DropdownMenuItem className="text-xs font-semibold px-3 py-2 cursor-pointer rounded-sm">
-                <User className="mr-2 h-3.5 w-3.5" />
-                <span>Mój profil</span>
+              <DropdownMenuItem className="text-[13px] font-medium px-2.5 py-2 cursor-pointer rounded-lg text-foreground hover:bg-accent focus:bg-accent">
+                <User className="mr-2 h-4 w-4 text-muted-foreground" strokeWidth={1.8} />
+                Mój profil
               </DropdownMenuItem>
             </Link>
             <Link href="/settings">
-              <DropdownMenuItem className="text-xs font-semibold px-3 py-2 cursor-pointer rounded-sm">
-                <Settings className="mr-2 h-3.5 w-3.5" />
-                <span>Ustawienia</span>
+              <DropdownMenuItem className="text-[13px] font-medium px-2.5 py-2 cursor-pointer rounded-lg text-foreground hover:bg-accent focus:bg-accent">
+                <Settings className="mr-2 h-4 w-4 text-muted-foreground" strokeWidth={1.8} />
+                Ustawienia
               </DropdownMenuItem>
             </Link>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-xs font-semibold px-3 py-2 text-red-600 cursor-pointer rounded-sm hover:bg-red-50 focus:bg-red-50 focus:text-red-600" onClick={signOut}>
-              <LogOut className="mr-2 h-3.5 w-3.5" />
-              <span>Wyloguj się</span>
+            <DropdownMenuSeparator className="bg-border" />
+            <DropdownMenuItem
+              className="text-[13px] font-medium px-2.5 py-2 text-destructive cursor-pointer rounded-lg hover:bg-destructive/10 focus:bg-destructive/10 focus:text-destructive"
+              onClick={signOut}
+            >
+              <LogOut className="mr-2 h-4 w-4" strokeWidth={1.8} />
+              Wyloguj się
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

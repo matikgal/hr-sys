@@ -165,25 +165,25 @@ export default function EmployeesPage() {
   };
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-8 pb-12 pt-4 px-6">
+    <div className="max-w-[1440px] mx-auto space-y-8 pb-12 px-8 py-10">
       {/* Crisp Header */}
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-200 pb-6">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Katalog pracowników</h1>
-          <p className="text-sm text-neutral-500 mt-1">Centralne repozytorium danych Twojego zespołu</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Katalog pracowników</h1>
+          <p className="text-sm text-muted-foreground mt-1">Centralne repozytorium danych Twojego zespołu</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="h-9 rounded-md border-neutral-200 font-medium">
+          <Button variant="outline" size="sm" className="h-9 rounded-md border-border font-medium">
             <Download size={14} className="mr-2" /> Eksportuj
           </Button>
           
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="h-9 rounded-md bg-black text-white hover:bg-neutral-800 font-medium">
+              <Button size="sm" className="h-9 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 font-medium">
                 <UserPlus size={14} className="mr-2" /> Dodaj pracownika
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px] border-neutral-200 rounded-md">
+            <DialogContent className="sm:max-w-[500px] border-border rounded-md">
               <form onSubmit={handleAddEmployee}>
                 <DialogHeader>
                   <DialogTitle>Nowy pracownik</DialogTitle>
@@ -194,30 +194,30 @@ export default function EmployeesPage() {
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="firstName" className="text-xs font-bold uppercase text-neutral-500">Imię</Label>
+                      <Label htmlFor="firstName" className="text-xs font-bold uppercase text-muted-foreground">Imię</Label>
                       <Input 
                         id="firstName" 
                         required 
                         placeholder="np. Jan" 
                         value={formData.firstName}
                         onChange={e => setFormData({...formData, firstName: e.target.value})}
-                        className="rounded-md border-neutral-200 h-9"
+                        className="rounded-md border-border h-9"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="lastName" className="text-xs font-bold uppercase text-neutral-500">Nazwisko</Label>
+                      <Label htmlFor="lastName" className="text-xs font-bold uppercase text-muted-foreground">Nazwisko</Label>
                       <Input 
                         id="lastName" 
                         required 
                         placeholder="np. Kowalski" 
                         value={formData.lastName}
                         onChange={e => setFormData({...formData, lastName: e.target.value})}
-                        className="rounded-md border-neutral-200 h-9"
+                        className="rounded-md border-border h-9"
                       />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-xs font-bold uppercase text-neutral-500">E-mail służbowy</Label>
+                    <Label htmlFor="email" className="text-xs font-bold uppercase text-muted-foreground">E-mail służbowy</Label>
                     <Input 
                       id="email" 
                       type="email" 
@@ -225,15 +225,15 @@ export default function EmployeesPage() {
                       placeholder="jan.kowalski@hr.local" 
                       value={formData.email}
                       onChange={e => setFormData({...formData, email: e.target.value})}
-                      className="rounded-md border-neutral-200 h-9"
+                      className="rounded-md border-border h-9"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="department" className="text-xs font-bold uppercase text-neutral-500">Dział</Label>
+                      <Label htmlFor="department" className="text-xs font-bold uppercase text-muted-foreground">Dział</Label>
                       <select 
                         id="department" 
-                        className="flex h-9 w-full rounded-md border border-neutral-200 bg-background px-3 py-1 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex h-9 w-full rounded-md border border-border bg-background px-3 py-1 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         required
                         value={formData.departmentId}
                         onChange={e => setFormData({...formData, departmentId: e.target.value})}
@@ -245,32 +245,32 @@ export default function EmployeesPage() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="position" className="text-xs font-bold uppercase text-neutral-500">Stanowisko</Label>
+                      <Label htmlFor="position" className="text-xs font-bold uppercase text-muted-foreground">Stanowisko</Label>
                       <Input 
                         id="position" 
                         required 
                         placeholder="np. Junior Developer" 
                         value={formData.positionId}
                         onChange={e => setFormData({...formData, positionId: e.target.value})}
-                        className="rounded-md border-neutral-200 h-9"
+                        className="rounded-md border-border h-9"
                       />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="startDate" className="text-xs font-bold uppercase text-neutral-500">Data rozpoczęcia</Label>
+                    <Label htmlFor="startDate" className="text-xs font-bold uppercase text-muted-foreground">Data rozpoczęcia</Label>
                     <Input 
                       id="startDate" 
                       type="date" 
                       required 
                       value={formData.startDate}
                       onChange={e => setFormData({...formData, startDate: e.target.value})}
-                      className="rounded-md border-neutral-200 h-9"
+                      className="rounded-md border-border h-9"
                     />
                   </div>
                 </div>
                 <DialogFooter>
                   <Button type="button" variant="outline" className="h-9 rounded-md" onClick={() => setIsDialogOpen(false)}>Anuluj</Button>
-                  <Button type="submit" disabled={isSubmitting} className="h-9 rounded-md bg-black text-white hover:bg-neutral-800">
+                  <Button type="submit" disabled={isSubmitting} className="h-9 rounded-md bg-primary text-primary-foreground hover:bg-primary/90">
                     {isSubmitting ? "Zapisywanie..." : "Dodaj pracownika"}
                   </Button>
                 </DialogFooter>
@@ -281,7 +281,7 @@ export default function EmployeesPage() {
       </header>
 
       {/* Stats Row */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0 border border-neutral-200 rounded-md divide-y sm:divide-y-0 sm:divide-x divide-neutral-200 overflow-hidden bg-white">
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0 border border-border rounded-md divide-y sm:divide-y-0 sm:divide-x divide-border overflow-hidden bg-card">
         <StatCell label="Wszyscy pracownicy" value={stats.total} icon={<Users size={16} />} />
         <StatCell label="Aktywni" value={stats.active} icon={<UserCheck size={16} />} />
         <StatCell label="Na urlopie" value={stats.onLeave} icon={<UserMinus size={16} />} highlight={stats.onLeave > 0} />
@@ -291,63 +291,63 @@ export default function EmployeesPage() {
       {/* Filters & Search */}
       <div className="flex flex-col md:flex-row md:items-center gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={16} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
           <Input 
             placeholder="Szukaj po nazwisku..." 
-            className="pl-10 border-neutral-200 rounded-md h-9 text-sm focus:ring-0 focus:border-neutral-900"
+            className="pl-10 border-border rounded-md h-9 text-sm focus:ring-0 focus:border-foreground"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Button variant="outline" size="sm" className="h-9 rounded-md border-neutral-200">
+        <Button variant="outline" size="sm" className="h-9 rounded-md border-border">
           <Filter size={14} className="mr-2" /> Filtrowanie
         </Button>
       </div>
 
       {/* Employee Table */}
-      <div className="bg-white border border-neutral-200 rounded-md overflow-hidden">
+      <div className="bg-card border border-border rounded-md overflow-hidden">
         <Table>
-          <TableHeader className="bg-neutral-50/50">
-            <TableRow className="hover:bg-transparent border-neutral-200">
-              <TableHead className="w-[300px] text-[11px] font-bold uppercase tracking-wider text-neutral-500 py-3 pl-6">Pracownik</TableHead>
-              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 py-3">Dział / Stanowisko</TableHead>
-              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 py-3">Data rozpoczęcia</TableHead>
-              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 py-3">Status</TableHead>
-              <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-neutral-500 py-3 pr-6">Akcje</TableHead>
+          <TableHeader className="bg-accent/50">
+            <TableRow className="hover:bg-transparent border-border">
+              <TableHead className="w-[300px] text-[11px] font-bold uppercase tracking-wider text-muted-foreground py-3 pl-6">Pracownik</TableHead>
+              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground py-3">Dział / Stanowisko</TableHead>
+              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground py-3">Data rozpoczęcia</TableHead>
+              <TableHead className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground py-3">Status</TableHead>
+              <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-muted-foreground py-3 pr-6">Akcje</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               [1, 2, 3, 4, 5].map((i) => (
-                <TableRow key={i} className="border-neutral-100">
+                <TableRow key={i} className="border-border/50">
                   <TableCell colSpan={5} className="py-4 px-6"><Skeleton className="h-10 w-full" /></TableCell>
                 </TableRow>
               ))
             ) : filteredEmployees.map((emp) => (
               <TableRow 
                 key={emp.id} 
-                className="group cursor-pointer hover:bg-neutral-50/50 transition-colors border-neutral-100"
+                className="group cursor-pointer hover:bg-accent/50 transition-colors border-border/50"
                 onClick={() => handleRowClick(emp)}
               >
                 <TableCell className="py-3 pl-6">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8 border border-neutral-200 rounded-md">
+                    <Avatar className="h-8 w-8 border border-border rounded-md">
                       <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${emp.firstName}${emp.lastName}`} />
                       <AvatarFallback className="rounded-md">{emp.firstName[0]}{emp.lastName[0]}</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">
-                      <span className="text-sm font-semibold text-neutral-900 leading-tight">{emp.firstName} {emp.lastName}</span>
-                      <span className="text-[11px] text-neutral-500 mt-0.5">{emp.email}</span>
+                      <span className="text-sm font-semibold text-foreground leading-tight">{emp.firstName} {emp.lastName}</span>
+                      <span className="text-[11px] text-muted-foreground mt-0.5">{emp.email}</span>
                     </div>
                   </div>
                 </TableCell>
                 <TableCell className="py-3">
                   <div className="flex flex-col">
-                    <span className="text-sm font-medium text-neutral-700">{getDepartmentName(emp.departmentId)}</span>
-                    <span className="text-[11px] text-neutral-400 mt-0.5">{emp.positionId}</span>
+                    <span className="text-sm font-medium text-foreground/80">{getDepartmentName(emp.departmentId)}</span>
+                    <span className="text-[11px] text-muted-foreground mt-0.5">{emp.positionId}</span>
                   </div>
                 </TableCell>
-                <TableCell className="py-3 text-sm text-neutral-500 font-medium">
+                <TableCell className="py-3 text-sm text-muted-foreground font-medium">
                   {emp.startDate}
                 </TableCell>
                 <TableCell className="py-3">
@@ -355,16 +355,16 @@ export default function EmployeesPage() {
                 </TableCell>
                 <TableCell className="py-3 text-right pr-6" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-2">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-neutral-400 hover:text-black hover:bg-neutral-100 rounded-md">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md">
                       <ArrowRight size={14} />
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-neutral-400 hover:text-black hover:bg-neutral-100 rounded-md">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md">
                           <MoreHorizontal size={14} />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-40 border-neutral-200">
+                      <DropdownMenuContent align="end" className="w-40 border-border">
                         <DropdownMenuItem onClick={() => handleRowClick(emp)}>Podgląd profilu</DropdownMenuItem>
                         <DropdownMenuItem>Edytuj dane</DropdownMenuItem>
                         <DropdownMenuItem className="text-red-600">Dezaktywuj</DropdownMenuItem>
@@ -378,24 +378,24 @@ export default function EmployeesPage() {
         </Table>
         {!loading && filteredEmployees.length === 0 && (
           <div className="py-20 text-center">
-            <p className="text-sm font-medium text-neutral-500">Nie znaleziono pracowników.</p>
+            <p className="text-sm font-medium text-muted-foreground">Nie znaleziono pracowników.</p>
           </div>
         )}
       </div>
 
       {/* Employee Details Sheet */}
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent side="right" className="sm:max-w-md border-neutral-200">
+        <SheetContent side="right" className="sm:max-w-md border-border">
           {selectedEmployee && (
             <div className="space-y-8 py-4">
               <SheetHeader className="text-left">
                 <div className="flex items-center gap-4">
-                  <Avatar className="h-14 w-14 border border-neutral-200 rounded-md">
+                  <Avatar className="h-14 w-14 border border-border rounded-md">
                     <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedEmployee.firstName}${selectedEmployee.lastName}`} />
                     <AvatarFallback className="rounded-md">{selectedEmployee.firstName[0]}{selectedEmployee.lastName[0]}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <SheetTitle className="text-lg font-bold text-neutral-900">{selectedEmployee.firstName} {selectedEmployee.lastName}</SheetTitle>
+                    <SheetTitle className="text-lg font-bold text-foreground">{selectedEmployee.firstName} {selectedEmployee.lastName}</SheetTitle>
                     <SheetDescription className="flex items-center gap-1.5 mt-0.5 text-xs">
                       <Briefcase size={12} /> {selectedEmployee.positionId}
                     </SheetDescription>
@@ -405,40 +405,40 @@ export default function EmployeesPage() {
               </SheetHeader>
 
               <Tabs defaultValue="info" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 h-9 bg-neutral-100 p-1 rounded-md">
-                  <TabsTrigger value="info" className="text-xs rounded-sm data-[state=active]:bg-white data-[state=active]:shadow-none">Informacje</TabsTrigger>
-                  <TabsTrigger value="metadata" className="text-xs rounded-sm data-[state=active]:bg-white data-[state=active]:shadow-none">Dodatkowe</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 h-9 bg-muted p-1 rounded-md">
+                  <TabsTrigger value="info" className="text-xs rounded-sm data-[state=active]:bg-card data-[state=active]:shadow-none">Informacje</TabsTrigger>
+                  <TabsTrigger value="metadata" className="text-xs rounded-sm data-[state=active]:bg-card data-[state=active]:shadow-none">Dodatkowe</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="info" className="space-y-6 pt-6">
                   <div className="grid gap-4">
                     <div className="flex items-center gap-3 text-sm">
-                      <div className="size-8 rounded-md bg-neutral-50 border border-neutral-100 flex items-center justify-center text-neutral-400">
+                      <div className="size-8 rounded-md bg-muted border border-border/50 flex items-center justify-center text-muted-foreground">
                         <Mail size={14} />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider leading-none mb-1">E-mail</span>
-                        <span className="font-medium text-neutral-900">{selectedEmployee.email}</span>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider leading-none mb-1">E-mail</span>
+                        <span className="font-medium text-foreground">{selectedEmployee.email}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 text-sm">
-                      <div className="size-8 rounded-md bg-neutral-50 border border-neutral-100 flex items-center justify-center text-neutral-400">
+                      <div className="size-8 rounded-md bg-muted border border-border/50 flex items-center justify-center text-muted-foreground">
                         <Building2 size={14} />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider leading-none mb-1">Dział</span>
-                        <span className="font-medium text-neutral-900">{getDepartmentName(selectedEmployee.departmentId)}</span>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider leading-none mb-1">Dział</span>
+                        <span className="font-medium text-foreground">{getDepartmentName(selectedEmployee.departmentId)}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="pt-6 border-t border-neutral-100">
-                    <h4 className="text-[11px] font-bold uppercase tracking-wider text-neutral-900 mb-4">Szybkie akcje</h4>
+                  <div className="pt-6 border-t border-border/50">
+                    <h4 className="text-[11px] font-bold uppercase tracking-wider text-foreground mb-4">Szybkie akcje</h4>
                     <div className="grid grid-cols-2 gap-2">
-                      <Button variant="outline" size="sm" className="h-9 rounded-md justify-start border-neutral-200">
+                      <Button variant="outline" size="sm" className="h-9 rounded-md justify-start border-border">
                         <Mail className="mr-2 h-4 w-4" /> Wiadomość
                       </Button>
-                      <Button variant="outline" size="sm" className="h-9 rounded-md justify-start border-neutral-200">
+                      <Button variant="outline" size="sm" className="h-9 rounded-md justify-start border-border">
                         <TrendingUp className="mr-2 h-4 w-4" /> Rozwój
                       </Button>
                     </div>
@@ -447,21 +447,21 @@ export default function EmployeesPage() {
 
                 <TabsContent value="metadata" className="space-y-6 pt-6">
                   <div>
-                    <h4 className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-3">Umiejętności</h4>
+                    <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-3">Umiejętności</h4>
                     <div className="flex flex-wrap gap-1.5">
                       {selectedEmployee.metadata?.skills?.map((skill: string) => (
-                        <span key={skill} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-neutral-100 text-neutral-600 border border-neutral-200 uppercase tracking-tight">
+                        <span key={skill} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-muted text-foreground/70 border border-border uppercase tracking-tight">
                           {skill}
                         </span>
-                      )) || <span className="text-xs text-neutral-500 italic">Brak danych</span>}
+                      )) || <span className="text-xs text-muted-foreground italic">Brak danych</span>}
                     </div>
                   </div>
                 </TabsContent>
               </Tabs>
 
-              <div className="pt-6 border-t border-neutral-100 flex justify-end gap-2">
+              <div className="pt-6 border-t border-border/50 flex justify-end gap-2">
                 <Button variant="ghost" className="h-9 rounded-md text-sm" onClick={() => setIsSheetOpen(false)}>Zamknij</Button>
-                <Button className="h-9 rounded-md bg-black text-white hover:bg-neutral-800 text-sm">Pełny profil</Button>
+                <Button className="h-9 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 text-sm">Pełny profil</Button>
               </div>
             </div>
           )}
@@ -475,18 +475,18 @@ function StatCell({ label, value, icon, trend, highlight }: any) {
   return (
     <div className="p-6">
       <div className="flex items-center gap-2 mb-2">
-        <div className="text-neutral-400">{icon}</div>
-        <span className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider">{label}</span>
+        <div className="text-muted-foreground">{icon}</div>
+        <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{label}</span>
       </div>
       <div className="flex items-baseline justify-between">
         <span className={cn(
           "text-3xl font-bold tracking-tight",
-          highlight ? "text-red-600" : "text-neutral-900"
+          highlight ? "text-red-600" : "text-foreground"
         )}>
           {value}
         </span>
         {trend && (
-          <span className="text-[10px] font-bold bg-neutral-100 text-neutral-600 px-1.5 py-0.5 rounded">
+          <span className="text-[10px] font-bold bg-muted text-foreground/70 px-1.5 py-0.5 rounded">
             {trend}
           </span>
         )}

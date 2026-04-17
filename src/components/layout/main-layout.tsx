@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/context/auth-context";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,6 +11,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     if (!loading && !user && pathname !== "/login" && !pathname.includes("/admin/seed")) {
@@ -21,39 +22,41 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   if (loading) {
     return (
       <div className="flex h-screen bg-background">
-        <div className="w-72 bg-white/40 backdrop-blur-xl border-r border-black/[0.03]">
-          <div className="h-24 px-8 flex items-center">
-            <Skeleton className="h-10 w-10 rounded-xl" />
-            <Skeleton className="h-6 w-32 ml-3" />
-          </div>
-          <div className="px-4 py-4 space-y-3">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Skeleton key={i} className="h-12 w-full rounded-2xl" />
-            ))}
-          </div>
-        </div>
-        <div className="flex-1 flex flex-col">
-          <div className="h-24 border-b border-black/[0.03] bg-white/40 px-10 flex items-center justify-between">
-            <Skeleton className="h-10 w-64 rounded-xl" />
-            <div className="flex items-center gap-4">
-              <Skeleton className="h-10 w-10 rounded-full" />
-              <Skeleton className="h-10 w-24 rounded-xl" />
+        <div className="shrink-0 p-5 pr-0" style={{ width: '276px' }}>
+          <div className="h-full border border-border bg-card rounded-[18px] shadow-[0_6px_20px_rgba(14,16,20,0.06)] flex flex-col">
+            <div className="px-[18px] py-4 border-b border-border flex items-center gap-2.5">
+              <Skeleton className="size-[30px] rounded-lg" />
+              <Skeleton className="h-4 w-24" />
             </div>
-          </div>
-          <main className="p-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
-              {[1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} className="h-40 w-full rounded-3xl" />
+            <div className="px-[14px] py-3 space-y-1">
+              {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                <Skeleton key={i} className="h-8 w-full rounded-lg" />
               ))}
             </div>
-            <Skeleton className="h-96 w-full rounded-3xl" />
+          </div>
+        </div>
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="h-16 border-b border-border bg-card px-6 flex items-center justify-between shrink-0">
+            <Skeleton className="h-9 w-72 rounded-lg" />
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-9 w-9 rounded-lg" />
+              <Skeleton className="h-9 w-9 rounded-lg" />
+              <Skeleton className="h-9 w-32 rounded-lg" />
+            </div>
+          </div>
+          <main className="p-8">
+            <div className="grid grid-cols-4 gap-5 mb-6">
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="h-28 w-full rounded-xl" />
+              ))}
+            </div>
+            <Skeleton className="h-72 w-full rounded-xl" />
           </main>
         </div>
       </div>
     );
   }
 
-  // Allow login and admin seed pages without requiring full user session for seed
   if (!user && (pathname === "/login" || pathname.includes("/admin/seed"))) {
     return <>{children}</>;
   }
@@ -61,11 +64,22 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   if (!user) return null;
 
   return (
-    <div className="flex h-screen bg-background selection:bg-black/5 selection:text-black dark:selection:bg-white/10 dark:selection:text-white">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden relative">
+    <div className="flex h-screen bg-background">
+      {/* Sidebar wrapper — padding creates the floating tile gap */}
+      <div
+        className="shrink-0 p-5 pr-0 overflow-hidden"
+        style={{
+          width: sidebarCollapsed ? '88px' : '276px',
+          transition: 'width 300ms ease-in-out',
+        }}
+      >
+        <Sidebar collapsed={sidebarCollapsed} onCollapsedChange={setSidebarCollapsed} />
+      </div>
+
+      {/* Main content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
-        <main className="flex-1 overflow-y-auto p-6 md:p-10 no-scrollbar">
+        <main className="flex-1 overflow-y-auto no-scrollbar">
           {children}
         </main>
       </div>

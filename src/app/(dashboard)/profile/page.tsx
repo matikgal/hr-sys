@@ -24,10 +24,10 @@ export default function ProfilePage() {
   if (!user) return null;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
-      <div className="relative h-48 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 overflow-hidden">
-        <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" />
-        <Button variant="outline" size="sm" className="absolute top-4 right-4 bg-white/10 border-white/20 text-white hover:bg-white/20">
+    <div className="max-w-5xl mx-auto space-y-8 px-8 py-10 pb-12">
+      <div className="relative h-40 rounded-xl bg-primary overflow-hidden">
+        <div className="absolute inset-0 opacity-5 bg-[radial-gradient(circle,#fff_1px,transparent_1px)] bg-[length:20px_20px]" />
+        <Button variant="outline" size="sm" className="absolute top-4 right-4 bg-card/10 border-white/20 text-white hover:bg-card/20">
           <Edit size={14} className="mr-2" /> Edytuj tło
         </Button>
       </div>

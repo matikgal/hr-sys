@@ -207,8 +207,15 @@ export const approveLeave = async (leaveId: string, approverId: string): Promise
 
 export const rejectLeave = async (leaveId: string, approverId: string): Promise<void> => {
   const leaveRef = doc(db, COLLECTION_NAME, leaveId);
-  await updateDoc(leaveRef, { 
+  await updateDoc(leaveRef, {
     status: 'rejected',
     approverId
   });
+};
+
+export const getPendingLeaves = async (max = 5): Promise<Leave[]> => {
+  const col = collection(db, COLLECTION_NAME);
+  const q = query(col, where("status", "==", "pending"), orderBy("createdAt", "desc"), limit(max));
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Leave));
 };

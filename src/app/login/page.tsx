@@ -4,11 +4,7 @@ import { useState } from "react";
 import { auth } from "@/lib/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { AlertCircle, Lock, Mail } from "lucide-react";
+import { AlertCircle, Lock, Mail, Building2, ArrowRight, Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -21,7 +17,6 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
-    
     try {
       await signInWithEmailAndPassword(auth, email, password);
       router.push("/dashboard");
@@ -35,6 +30,7 @@ export default function LoginPage() {
 
   const quickLogin = async (role: 'admin' | 'user') => {
     setLoading(true);
+    setError("");
     const quickEmail = role === 'admin' ? "admin@hr.local" : "user@hr.local";
     try {
       await signInWithEmailAndPassword(auth, quickEmail, "haslo123");
@@ -47,81 +43,129 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">HR System</CardTitle>
-          <CardDescription className="text-center">
-            Zaloguj się do swojego panelu
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            {error && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-md flex items-center gap-2 text-sm">
-                <AlertCircle size={16} />
-                {error}
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="name@company.com" 
-                  className="pl-10"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required 
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Hasło</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input 
-                  id="password" 
-                  type="password" 
-                  className="pl-10"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required 
-                />
-              </div>
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Logowanie..." : "Zaloguj się"}
-            </Button>
-          </form>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      {/* Subtle dot grid */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-40"
+        style={{
+          backgroundImage: `radial-gradient(circle, #cbd5e1 1px, transparent 1px)`,
+          backgroundSize: '28px 28px'
+        }}
+      />
 
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
+      <div className="relative w-full max-w-sm">
+        {/* Logo mark */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="size-12 rounded-xl bg-primary flex items-center justify-center mb-4">
+            <Building2 size={20} className="text-white" strokeWidth={2} />
+          </div>
+          <h1 className="text-xl font-semibold text-foreground">HR Manager</h1>
+          <p className="text-[13px] text-muted-foreground mt-1">Zaloguj się do swojego panelu</p>
+        </div>
+
+        {/* Card */}
+        <div className="bg-card border border-border shadow-sm rounded-2xl overflow-hidden">
+          <div className="px-7 py-7">
+            <form onSubmit={handleLogin} className="space-y-4">
+              {error && (
+                <div className="bg-red-50 border border-red-100 text-red-700 px-4 py-3 rounded-xl flex items-center gap-2.5 text-[13px]">
+                  <AlertCircle size={14} className="shrink-0" strokeWidth={2} />
+                  {error}
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label htmlFor="email" className="text-[12px] font-medium text-foreground/70 block">
+                  Email
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" strokeWidth={1.8} />
+                  <input
+                    id="email"
+                    type="email"
+                    placeholder="email@firma.pl"
+                    className="w-full pl-9 pr-4 h-10 bg-background border border-border rounded-lg text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-ring/40 transition-all"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="password" className="text-[12px] font-medium text-foreground/70 block">
+                  Hasło
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" strokeWidth={1.8} />
+                  <input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    className="w-full pl-9 pr-4 h-10 bg-background border border-border rounded-lg text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-ring/40 transition-all"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full h-10 bg-primary rounded-lg text-primary-foreground text-[13px] font-medium flex items-center justify-center gap-2 hover:bg-primary/90 active:bg-primary transition-colors disabled:opacity-60 disabled:cursor-not-allowed mt-2"
+              >
+                {loading ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <>
+                    Zaloguj się
+                    <ArrowRight size={14} strokeWidth={2.5} />
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="relative my-5">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center">
+                <span className="bg-card px-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                  Szybkie logowanie
+                </span>
+              </div>
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-gray-500">Szybkie logowanie</span>
+
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                onClick={() => quickLogin('admin')}
+                disabled={loading}
+                className="h-9 bg-muted border border-border rounded-lg text-[12px] font-medium text-foreground/80 hover:bg-accent transition-colors disabled:opacity-50"
+              >
+                Admin
+              </button>
+              <button
+                onClick={() => quickLogin('user')}
+                disabled={loading}
+                className="h-9 bg-muted border border-border rounded-lg text-[12px] font-medium text-foreground/80 hover:bg-accent transition-colors disabled:opacity-50"
+              >
+                Pracownik
+              </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Button variant="outline" onClick={() => quickLogin('admin')} disabled={loading}>
-              Admin
-            </Button>
-            <Button variant="outline" onClick={() => quickLogin('user')} disabled={loading}>
-              Pracownik
-            </Button>
+          <div className="px-7 py-3.5 border-t border-border bg-muted flex items-center justify-between">
+            <p className="text-[11px] text-muted-foreground">Problemy? Skontaktuj się z IT</p>
+            <button
+              onClick={() => router.push('/admin/seed')}
+              className="text-[11px] font-medium text-foreground/70 hover:text-foreground transition-colors"
+            >
+              Inicjuj bazę →
+            </button>
           </div>
-        </CardContent>
-        <CardFooter className="flex flex-col text-center text-xs text-gray-500 space-y-2">
-          <p>Potrzebujesz pomocy? Skontaktuj się z działem IT.</p>
-          <p className="text-blue-500 cursor-pointer" onClick={() => router.push('/admin/seed')}>
-            Zainicjuj bazę danych
-          </p>
-        </CardFooter>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

@@ -99,11 +99,11 @@ export default function BenefitsPage() {
   };
 
   return (
-    <div className="space-y-12 pb-20 max-w-5xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b border-neutral-100">
+    <div className="max-w-5xl mx-auto space-y-8 px-8 py-10 pb-12">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b border-border/50">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-black uppercase">Cafeteria</h1>
-          <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mt-2">Manage your allowances and perks.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground uppercase">Cafeteria</h1>
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mt-2">Manage your allowances and perks.</p>
         </div>
         <div className="flex items-center gap-4">
           <Button variant="outline" size="sm" className="h-10">
@@ -115,23 +115,23 @@ export default function BenefitsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-12 items-start">
         <div className="md:col-span-2 space-y-10">
           <section>
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 mb-6 flex items-center gap-2">
-              <div className="h-px w-4 bg-neutral-200"></div>
+            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-6 flex items-center gap-2">
+              <div className="h-px w-4 bg-border"></div>
               Budget Overview
             </h2>
             <div className="space-y-6">
               <div className="flex justify-between items-end">
                 <div>
-                  <div className="text-4xl font-black text-black">{currentSpend} <span className="text-xl">PLN</span></div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mt-1">Monthly utilization of {budgetLimit} PLN</p>
+                  <div className="text-4xl font-black text-foreground">{currentSpend} <span className="text-xl">PLN</span></div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1">Monthly utilization of {budgetLimit} PLN</p>
                 </div>
                 <div className="text-right">
                   <span className="text-xs font-black uppercase tracking-tighter">{Math.round(budgetPercentage)}% consumed</span>
                 </div>
               </div>
-              <div className="h-1 w-full bg-neutral-100 overflow-hidden">
+              <div className="h-1 w-full bg-muted overflow-hidden">
                 <div 
-                  className="h-full bg-black transition-all duration-500 ease-out" 
+                  className="h-full bg-primary transition-all duration-500 ease-out" 
                   style={{ width: `${Math.min(100, budgetPercentage)}%` }}
                 ></div>
               </div>
@@ -139,13 +139,13 @@ export default function BenefitsPage() {
           </section>
 
           <section>
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 mb-6 flex items-center gap-2">
-              <div className="h-px w-4 bg-neutral-200"></div>
+            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-6 flex items-center gap-2">
+              <div className="h-px w-4 bg-border"></div>
               Available Perks
             </h2>
-            <div className="border-t border-neutral-100">
+            <div className="border-t border-border/50">
               {loading ? (
-                [1, 2, 3].map(i => <div key={i} className="py-6 border-b border-neutral-100"><Skeleton className="h-12 w-full" /></div>)
+                [1, 2, 3].map(i => <div key={i} className="py-6 border-b border-border/50"><Skeleton className="h-12 w-full" /></div>)
               ) : (
                 benefits.map((benefit) => {
                   const isEnrolled = enrolledIds.includes(benefit.id);
@@ -155,23 +155,23 @@ export default function BenefitsPage() {
                     <div 
                       key={benefit.id} 
                       className={cn(
-                        "group py-6 border-b border-neutral-100 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors",
-                        isEnrolled && "bg-neutral-50/50 px-4 -mx-4"
+                        "group py-6 border-b border-border/50 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors",
+                        isEnrolled && "bg-accent/50 px-4 -mx-4"
                       )}
                     >
                       <div className="flex items-start gap-4">
                         <div className={cn(
-                          "p-2.5 rounded-none border border-neutral-200 flex items-center justify-center transition-colors",
-                          isEnrolled ? "bg-black text-white border-black" : "bg-white text-neutral-400"
+                          "p-2.5 rounded-none border border-border flex items-center justify-center transition-colors",
+                          isEnrolled ? "bg-primary text-primary-foreground border-black" : "bg-card text-muted-foreground"
                         )}>
                           {getBenefitIcon(benefit.name)}
                         </div>
                         <div>
                           <div className="flex items-center gap-3">
-                            <h3 className="text-sm font-bold uppercase tracking-tight text-black">{benefit.name}</h3>
+                            <h3 className="text-sm font-bold uppercase tracking-tight text-foreground">{benefit.name}</h3>
                             {isEnrolled && <Badge className="rounded-none bg-emerald-500 hover:bg-emerald-500 text-[9px] h-4">Active</Badge>}
                           </div>
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mt-1">{benefit.provider} • {benefit.monthlyCost} PLN / month</p>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1">{benefit.provider} • {benefit.monthlyCost} PLN / month</p>
                         </div>
                       </div>
                       
@@ -191,7 +191,7 @@ export default function BenefitsPage() {
                             variant="outline" 
                             size="sm" 
                             className={cn(
-                              "font-black h-8 border-neutral-200",
+                              "font-black h-8 border-border",
                               !canAfford && "opacity-30 cursor-not-allowed"
                             )}
                             onClick={() => handleEnroll(benefit.id)}
@@ -210,10 +210,10 @@ export default function BenefitsPage() {
         </div>
 
         <div className="space-y-10">
-          <section className="bg-neutral-50 p-8 border border-neutral-100">
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 mb-4">Support</h2>
-            <p className="text-xs text-neutral-500 leading-relaxed mb-6">Need help with your benefits or have a technical issue with the cafeteria platform?</p>
-            <Button variant="outline" size="sm" className="w-full border-neutral-200 bg-white">
+          <section className="bg-muted p-8 border border-border/50">
+            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4">Support</h2>
+            <p className="text-xs text-muted-foreground leading-relaxed mb-6">Need help with your benefits or have a technical issue with the cafeteria platform?</p>
+            <Button variant="outline" size="sm" className="w-full border-border bg-card">
               Contact Admin <ArrowRight className="ml-2" />
             </Button>
           </section>

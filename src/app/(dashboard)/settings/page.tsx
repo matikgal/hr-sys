@@ -21,7 +21,7 @@ export default function SettingsPage() {
   const { user, signOut } = useAuth();
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="max-w-4xl mx-auto space-y-8 px-8 py-10 pb-12">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Ustawienia</h1>
         <p className="text-sm text-muted-foreground mt-1">Zarządzaj swoim kontem i preferencjami systemowymi.</p>
