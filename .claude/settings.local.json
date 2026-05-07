@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python scripts/search.py \"HR admin dashboard SaaS dark glassmorphism indigo violet modern\" --design-system -p \"HR Nexus\" -f markdown)",
+      "Bash(python cli/assets/scripts/search.py \"HR admin dashboard SaaS dark glassmorphism indigo violet modern\" --design-system -p \"HR Nexus\" -f markdown)",
+      "Bash(npm run *)",
+      "Bash(echo \"Server PID: $!\")",
+      "Bash(curl *)",
+      "Skill(update-config)",
+      "Bash(npx tsc *)",
+      "Bash(sed -i 's/max-w-\\\\[1400px\\\\] mx-auto space-y-8 pb-12 pt-4 px-6/max-w-[1440px] mx-auto space-y-8 pb-12 px-8 py-10/g' src/app/\\\\\\(dashboard\\\\\\)/attendance/page.tsx)",
+      "Bash(sed -i 's/max-w-\\\\[1400px\\\\] mx-auto space-y-8 pb-12 pt-4 px-6/max-w-[1440px] mx-auto space-y-8 pb-12 px-8 py-10/g' src/app/\\\\\\(dashboard\\\\\\)/employees/page.tsx)",
+      "Bash(sed -i 's/space-y-6 animate-in fade-in duration-500 pb-20/max-w-[1440px] mx-auto space-y-6 px-8 py-10 pb-12/g' src/app/\\\\\\(dashboard\\\\\\)/documents/page.tsx)",
+      "Bash(sed -i 's/space-y-6 animate-in fade-in duration-500 pb-20/max-w-[1440px] mx-auto space-y-6 px-8 py-10 pb-12/g' src/app/\\\\\\(dashboard\\\\\\)/learning/page.tsx)",
+      "Bash(sed -i 's/space-y-6 animate-in fade-in duration-500 pb-20/max-w-[1440px] mx-auto space-y-6 px-8 py-10 pb-12/g' src/app/\\\\\\(dashboard\\\\\\)/leaves/page.tsx)",
+      "Bash(sed -i 's/border border-slate-200 bg-white px-3 py-1 text-\\\\[13px\\\\] text-slate-900 transition-all outline-none placeholder:text-slate-400 focus-visible:border-slate-400 focus-visible:ring-2 focus-visible:ring-slate-900\\\\/10/border border-border bg-background px-3 py-1 text-[13px] text-foreground transition-all outline-none placeholder:text-muted-foreground focus-visible:border-ring\\\\/40 focus-visible:ring-2 focus-visible:ring-ring\\\\/20/' src/components/ui/input.tsx)",
+      "Bash(sed -i 's/bg-slate-900 flex items-center justify-center mb-4/bg-primary flex items-center justify-center mb-4/g' src/app/login/page.tsx)",
+      "Bash(sed -i 's/text-slate-600 block/text-foreground\\\\/70 block/g' src/app/login/page.tsx)",
+      "Bash(sed -i 's/text-slate-400\" strokeWidth={1.8}/text-muted-foreground\" strokeWidth={1.8}/g' src/app/login/page.tsx)",
+      "Bash(sed -i 's/bg-white border border-slate-200 rounded-lg text-\\\\[13px\\\\] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900\\\\/10 focus:border-slate-400/bg-background border border-border rounded-lg text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring\\\\/20 focus:border-ring\\\\/40/g' src/app/login/page.tsx)",
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(mkdir -p /tmp/hr_design)",
+      "Bash(tar -xf /tmp/hr_design.html -C /tmp/hr_design)",
+      "Bash(npx next *)"
+    ]
+  }
+}

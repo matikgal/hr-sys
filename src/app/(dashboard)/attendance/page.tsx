@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { 
   Clock, 
   Play, 
@@ -29,81 +29,34 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import { 
-  getTodayAttendance, 
-  clockIn, 
-  clockOut, 
-  getEmployeeAttendanceHistory 
-} from '@/services/db/attendance';
-import { getAllEmployees } from '@/services/db/employees';
 import { Attendance, Employee } from '@/types';
 import { cn } from '@/lib/utils';
+import { useEmployees } from '@/hooks/use-employees';
+import { useTodayAttendance, useAttendanceHistory, useClockIn, useClockOut } from '@/hooks/use-attendance';
 
 export default function AttendancePage() {
-  const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null);
-  const [todayRecord, setTodayRecord] = useState<Attendance | null>(null);
-  const [history, setHistory] = useState<Attendance[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
+  const { data: employees = [], isLoading: empLoading } = useEmployees({ limit: 1 });
+  const currentEmployee = employees[0] ?? null;
+  const empId = currentEmployee?.id;
 
-  useEffect(() => {
-    async function initData() {
-      try {
-        const employees = await getAllEmployees({ limit: 1 });
-        if (employees.length > 0) {
-          const emp = employees[0];
-          setCurrentEmployee(emp);
-          
-          const today = await getTodayAttendance(emp.id);
-          setTodayRecord(today);
-          
-          const historyData = await getEmployeeAttendanceHistory(emp.id);
-          setHistory(historyData);
-        }
-      } catch (error) {
-        console.error("Error initializing attendance data:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    initData();
-  }, []);
+  const { data: todayRecord, isLoading: todayLoading } = useTodayAttendance(empId);
+  const { data: history = [], isLoading: historyLoading } = useAttendanceHistory(empId);
+  const loading = empLoading || todayLoading || historyLoading;
 
-  const handleClockIn = async () => {
+  const clockInMutation = useClockIn(empId);
+  const clockOutMutation = useClockOut(empId);
+  const actionLoading = clockInMutation.isPending || clockOutMutation.isPending;
+
+  const handleClockIn = () => {
     if (!currentEmployee) return;
-    setActionLoading(true);
-    try {
-      const name = `${currentEmployee.firstName} ${currentEmployee.lastName}`;
-      await clockIn(currentEmployee.id, name);
-      
-      const updatedToday = await getTodayAttendance(currentEmployee.id);
-      setTodayRecord(updatedToday);
-      
-      const updatedHistory = await getEmployeeAttendanceHistory(currentEmployee.id);
-      setHistory(updatedHistory);
-    } catch (error) {
-      console.error("Clock in error:", error);
-    } finally {
-      setActionLoading(false);
-    }
+    clockInMutation.mutate({
+      name: `${currentEmployee.firstName} ${currentEmployee.lastName}`,
+    });
   };
 
-  const handleClockOut = async () => {
+  const handleClockOut = () => {
     if (!todayRecord) return;
-    setActionLoading(true);
-    try {
-      await clockOut(todayRecord.id, todayRecord.events);
-      
-      const updatedToday = await getTodayAttendance(todayRecord.employeeId);
-      setTodayRecord(updatedToday);
-      
-      const updatedHistory = await getEmployeeAttendanceHistory(todayRecord.employeeId);
-      setHistory(updatedHistory);
-    } catch (error) {
-      console.error("Clock out error:", error);
-    } finally {
-      setActionLoading(false);
-    }
+    clockOutMutation.mutate({ recordId: todayRecord.id, events: todayRecord.events });
   };
 
   const isWorking = todayRecord && todayRecord.events[todayRecord.events.length - 1].type === 'in';

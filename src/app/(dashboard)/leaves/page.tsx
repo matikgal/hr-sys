@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Calendar as CalendarIcon, 
   Search, 
@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
   TableBody,
@@ -38,59 +39,38 @@ import {
   SheetFooter,
   SheetClose
 } from "@/components/ui/sheet";
-import { getAllLeaves, getLeaveBalance, requestLeave } from '@/services/db/leaves';
-import { getEmployeeByAuthId } from '@/services/db/employees';
 import { Leave, LeaveBalance, Employee } from '@/types';
 import { useAuth } from '@/context/auth-context';
-import { format, differenceInBusinessDays, parseISO } from 'date-fns';
+import { useLeaves, useLeaveBalance, useRequestLeave, useApproveLeave, useRejectLeave } from '@/hooks/use-leaves';
+import { useEmployeeByAuthId } from '@/hooks/use-employees';
+import { format, differenceInBusinessDays, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths, isSameDay } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function LeavesPage() {
   const { user } = useAuth();
-  const [leaves, setLeaves] = useState<Leave[]>([]);
-  const [balance, setBalance] = useState<LeaveBalance | null>(null);
-  const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  
-  // Form state
   const [formData, setFormData] = useState({
     type: 'vacation' as Leave['type'],
     startDate: format(new Date(), 'yyyy-MM-dd'),
     endDate: format(new Date(), 'yyyy-MM-dd'),
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const data = await getAllLeaves();
-      setLeaves(data);
-      
-      let empId = "EMP-001"; // Default mock ID
-      
-      if (user?.uid) {
-        const emp = await getEmployeeByAuthId(user.uid);
-        if (emp) {
-          setCurrentEmployee(emp);
-          empId = emp.id;
-        }
-      }
-      
-      const balanceData = await getLeaveBalance(empId);
-      setBalance(balanceData);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: currentEmployee } = useEmployeeByAuthId(user?.uid);
+  const empId = currentEmployee?.id ?? 'EMP-001';
 
-  useEffect(() => {
-    fetchData();
-  }, [user]);
+  const { data: leaves = [], isLoading: leavesLoading } = useLeaves();
+  const { data: balance, isLoading: balanceLoading } = useLeaveBalance(empId);
+  const loading = leavesLoading || balanceLoading;
+
+  const requestLeaveMutation = useRequestLeave();
+  const approveMutation = useApproveLeave();
+  const rejectMutation = useRejectLeave();
+
+  const canManageLeaves = user?.role === 'admin' || user?.role === 'hr' || user?.role === 'manager';
 
   const filteredLeaves = leaves.filter(l => 
     l.employeeName?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -118,39 +98,35 @@ export default function LeavesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     setError(null);
 
     try {
       const start = parseISO(formData.startDate);
       const end = parseISO(formData.endDate);
-      
-      if (end < start) {
-        throw new Error("Data zakończenia nie może być wcześniejsza niż data rozpoczęcia.");
-      }
+      if (end < start) throw new Error('Data zakończenia nie może być wcześniejsza niż data rozpoczęcia.');
 
       const daysCount = differenceInBusinessDays(end, start) + 1;
-      const employeeId = currentEmployee?.id || "EMP-001";
-      const employeeName = currentEmployee ? `${currentEmployee.firstName} ${currentEmployee.lastName}` : (user?.displayName || user?.email || "Pracownik");
-      
-      await requestLeave({
-        employeeId: employeeId,
-        employeeName: employeeName,
+      const employeeName = currentEmployee
+        ? `${currentEmployee.firstName} ${currentEmployee.lastName}`
+        : (user?.displayName || user?.email || 'Pracownik');
+
+      await requestLeaveMutation.mutateAsync({
+        employeeId: empId,
+        employeeName,
         type: formData.type,
         startDate: formData.startDate,
         endDate: formData.endDate,
-        daysCount: daysCount,
-        createdAt: new Date().toISOString()
+        daysCount,
+        createdAt: new Date().toISOString(),
       });
 
       setIsSheetOpen(false);
-      fetchData(); // Refresh data
     } catch (err: any) {
-      setError(err.message || "Wystąpił błąd podczas składania wniosku.");
-    } finally {
-      setIsSubmitting(false);
+      setError(err.message || 'Wystąpił błąd podczas składania wniosku.');
     }
   };
+
+  const isSubmitting = requestLeaveMutation.isPending;
 
   const vacationPercent = balance ? (balance.vacationUsed / balance.vacationTotal) * 100 : 0;
 
@@ -291,78 +267,198 @@ export default function LeavesPage() {
         </Card>
       </div>
 
-      <div className="flex flex-col md:flex-row md:items-center gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-          <Input 
-            placeholder="Szukaj pracownika..." 
-            className="pl-10 bg-card border-border shadow-none h-10 text-sm"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+      <Tabs defaultValue="list">
+        <TabsList className="bg-background border border-border rounded-xl p-1 h-auto gap-1 mb-4">
+          <TabsTrigger value="list" className="text-[13px] font-medium px-4 py-2 rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground">
+            Lista
+          </TabsTrigger>
+          <TabsTrigger value="calendar" className="text-[13px] font-medium px-4 py-2 rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground">
+            Kalendarz zespołu
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="list">
+          <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+              <Input
+                placeholder="Szukaj pracownika..."
+                className="pl-10 bg-card border-border shadow-none h-10 text-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <Button variant="outline" size="sm" className="h-10 px-4">
+              <Filter size={16} className="mr-2" /> Filtrowanie
+            </Button>
+          </div>
+
+          <Card className="shadow-none border-border overflow-hidden">
+            <Table>
+              <TableHeader className="bg-muted/30">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="text-xs font-bold uppercase tracking-wider py-4 pl-6">Pracownik</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider py-4">Typ urlopu</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider py-4">Okres</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider py-4">Dni</TableHead>
+                  <TableHead className="text-xs font-bold uppercase tracking-wider py-4">Status</TableHead>
+                  <TableHead className="text-right text-xs font-bold uppercase tracking-wider py-4 pr-6">Akcje</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  [1, 2, 3, 4, 5].map((i) => (
+                    <TableRow key={i}>
+                      <TableCell colSpan={6} className="py-4 px-6"><Skeleton className="h-10 w-full" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : filteredLeaves.map((leave) => (
+                  <TableRow key={leave.id} className="group transition-colors border-border">
+                    <TableCell className="py-3 pl-6">
+                      <span className="text-sm font-semibold">{leave.employeeName || 'Nieznany'}</span>
+                    </TableCell>
+                    <TableCell className="py-3">{getTypeBadge(leave.type)}</TableCell>
+                    <TableCell className="py-3 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <CalendarIcon size={14} />
+                        <span>{format(parseISO(leave.startDate), 'dd MMM yyyy', { locale: pl })} – {format(parseISO(leave.endDate), 'dd MMM yyyy', { locale: pl })}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-3 text-sm">{leave.daysCount}</TableCell>
+                    <TableCell className="py-3">{getStatusBadge(leave.status)}</TableCell>
+                    <TableCell className="py-3 text-right pr-6">
+                      {canManageLeaves && leave.status === 'pending' ? (
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-xs text-red-600 border-red-200 hover:bg-red-50"
+                            disabled={rejectMutation.isPending}
+                            onClick={() => rejectMutation.mutate({ leaveId: leave.id, approverId: user!.uid })}
+                          >
+                            <XCircle size={13} className="mr-1" /> Odrzuć
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                            disabled={approveMutation.isPending}
+                            onClick={() => approveMutation.mutate({ leaveId: leave.id, approverId: user!.uid })}
+                          >
+                            <CheckCircle2 size={13} className="mr-1" /> Zatwierdź
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            {!loading && filteredLeaves.length === 0 && (
+              <div className="py-20 text-center">
+                <FileText size={48} className="text-muted-foreground/30 mx-auto mb-4" />
+                <p className="text-sm text-muted-foreground">Brak wniosków urlopowych.</p>
+              </div>
+            )}
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="calendar">
+          <TeamCalendar leaves={leaves} loading={loading} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+/* ---- Team Calendar ---- */
+const DAY_NAMES = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd'];
+
+function TeamCalendar({ leaves, loading }: { leaves: Leave[]; loading: boolean }) {
+  const [month, setMonth] = useState(new Date());
+
+  const days = eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) });
+  // Monday-first: getDay returns 0=Sun, map to Mon-first offset
+  const startOffset = ((getDay(days[0]) + 6) % 7);
+
+  const activeLeaves = leaves.filter(l => l.status === 'approved' || l.status === 'auto_approved' || l.status === 'pending');
+
+  const getLeavesForDay = (day: Date) => {
+    const ds = format(day, 'yyyy-MM-dd');
+    return activeLeaves.filter(l => ds >= l.startDate && ds <= l.endDate);
+  };
+
+  return (
+    <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-border/60 flex items-center justify-between">
+        <h3 className="text-[15px] font-semibold text-foreground capitalize">
+          {format(month, 'LLLL yyyy', { locale: pl })}
+        </h3>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3 text-[12px] text-muted-foreground mr-4">
+            <span className="flex items-center gap-1.5"><span className="size-2 rounded-sm bg-[#0a6b3e]" /> Zatwierdzone</span>
+            <span className="flex items-center gap-1.5"><span className="size-2 rounded-sm bg-amber-400" /> Oczekujące</span>
+          </div>
+          <button onClick={() => setMonth(m => subMonths(m, 1))} className="size-8 flex items-center justify-center rounded-lg border border-border bg-card hover:bg-accent transition-colors">
+            <ChevronLeft size={15} />
+          </button>
+          <button onClick={() => setMonth(new Date())} className="h-8 px-3 text-[12px] rounded-lg border border-border bg-card hover:bg-accent transition-colors font-medium">
+            Dziś
+          </button>
+          <button onClick={() => setMonth(m => addMonths(m, 1))} className="size-8 flex items-center justify-center rounded-lg border border-border bg-card hover:bg-accent transition-colors">
+            <ChevronRight size={15} />
+          </button>
         </div>
-        <Button variant="outline" size="sm" className="h-10 px-4">
-          <Filter size={16} className="mr-2" /> Filtrowanie
-        </Button>
       </div>
 
-      <Card className="shadow-none border-border overflow-hidden">
-        <Table>
-          <TableHeader className="bg-muted/30">
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="text-xs font-bold uppercase tracking-wider py-4 pl-6">Pracownik</TableHead>
-              <TableHead className="text-xs font-bold uppercase tracking-wider py-4">Typ urlopu</TableHead>
-              <TableHead className="text-xs font-bold uppercase tracking-wider py-4">Okres</TableHead>
-              <TableHead className="text-xs font-bold uppercase tracking-wider py-4">Dni</TableHead>
-              <TableHead className="text-xs font-bold uppercase tracking-wider py-4">Status</TableHead>
-              <TableHead className="text-right text-xs font-bold uppercase tracking-wider py-4 pr-6">Akcje</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              [1, 2, 3, 4, 5].map((i) => (
-                <TableRow key={i}>
-                  <TableCell colSpan={6} className="py-4 px-6"><Skeleton className="h-10 w-full" /></TableCell>
-                </TableRow>
-              ))
-            ) : filteredLeaves.map((leave) => (
-              <TableRow key={leave.id} className="group transition-colors border-border">
-                <TableCell className="py-3 pl-6">
-                  <span className="text-sm font-semibold">{leave.employeeName || 'Nieznany'}</span>
-                </TableCell>
-                <TableCell className="py-3">
-                  {getTypeBadge(leave.type)}
-                </TableCell>
-                <TableCell className="py-3 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <CalendarIcon size={14} />
-                    <span>{format(parseISO(leave.startDate), 'dd MMM yyyy', { locale: pl })} - {format(parseISO(leave.endDate), 'dd MMM yyyy', { locale: pl })}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="py-3 text-sm">
-                  {leave.daysCount}
-                </TableCell>
-                <TableCell className="py-3">
-                  {getStatusBadge(leave.status)}
-                </TableCell>
-                <TableCell className="py-3 text-right pr-6">
-                  <div className="flex items-center justify-end gap-2">
-                    <Button variant="outline" size="sm" className="h-8 text-xs">Szczegóły</Button>
-                  </div>
-                </TableCell>
-              </TableRow>
+      {loading ? (
+        <div className="p-6"><Skeleton className="h-64 w-full rounded-lg" /></div>
+      ) : (
+        <div className="p-4">
+          {/* Day names */}
+          <div className="grid grid-cols-7 mb-2">
+            {DAY_NAMES.map(d => (
+              <div key={d} className="text-center text-[11px] font-medium text-muted-foreground py-2">{d}</div>
             ))}
-          </TableBody>
-        </Table>
-        {!loading && filteredLeaves.length === 0 && (
-          <div className="py-20 text-center">
-            <div className="flex justify-center mb-4">
-              <FileText size={48} className="text-muted-foreground/30" />
-            </div>
-            <p className="text-sm text-muted-foreground">Brak wniosków urlopowych.</p>
           </div>
-        )}
-      </Card>
+          {/* Days grid */}
+          <div className="grid grid-cols-7 gap-1">
+            {Array.from({ length: startOffset }).map((_, i) => <div key={`empty-${i}`} />)}
+            {days.map(day => {
+              const dayLeaves = getLeavesForDay(day);
+              const isToday = isSameDay(day, new Date());
+              return (
+                <div key={day.toISOString()} className={cn(
+                  'min-h-[72px] rounded-lg p-1.5 border',
+                  isToday ? 'border-[#0a6b3e] bg-[#e6f1ea]/40' : 'border-border/40 bg-background/40',
+                )}>
+                  <div className={cn(
+                    'text-[11px] font-medium mb-1 w-6 h-6 flex items-center justify-center rounded-full',
+                    isToday ? 'bg-[#0a6b3e] text-white' : 'text-muted-foreground',
+                  )}>
+                    {format(day, 'd')}
+                  </div>
+                  <div className="space-y-0.5">
+                    {dayLeaves.slice(0, 3).map(l => (
+                      <div key={l.id} className={cn(
+                        'text-[9px] font-medium px-1 py-0.5 rounded truncate',
+                        l.status === 'pending' ? 'bg-amber-100 text-amber-800' : 'bg-[#e6f1ea] text-[#064a2a]',
+                      )}>
+                        {l.employeeName?.split(' ')[0] ?? '—'}
+                      </div>
+                    ))}
+                    {dayLeaves.length > 3 && (
+                      <div className="text-[9px] text-muted-foreground px-1">+{dayLeaves.length - 3}</div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

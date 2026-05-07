@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Search, 
   Filter, 
@@ -48,9 +48,9 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { getAllEmployees, addEmployee } from '@/services/db/employees';
-import { getDepartments } from '@/services/db/system';
+import Link from 'next/link';
 import { Employee, Department } from '@/types';
+import { useEmployees, useDepartments, useAddEmployee } from '@/hooks/use-employees';
 import { cn } from '@/lib/utils';
 
 import {
@@ -64,70 +64,41 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 
+const EMPTY_FORM = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  departmentId: '',
+  positionId: '',
+  startDate: new Date().toISOString().split('T')[0],
+  status: 'active' as Employee['status'],
+};
+
 export default function EmployeesPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState(EMPTY_FORM);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    departmentId: '',
-    positionId: '',
-    startDate: new Date().toISOString().split('T')[0],
-    status: 'active' as Employee['status']
-  });
+  const { data: employees = [], isLoading: empLoading } = useEmployees();
+  const { data: departments = [], isLoading: deptLoading } = useDepartments();
+  const loading = empLoading || deptLoading;
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [empData, deptData] = await Promise.all([
-        getAllEmployees(),
-        getDepartments()
-      ]);
-      setEmployees(empData);
-      setDepartments(deptData);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const addEmployeeMutation = useAddEmployee();
+  const isSubmitting = addEmployeeMutation.isPending;
 
   const handleAddEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     try {
-      await addEmployee({
+      await addEmployeeMutation.mutateAsync({
         ...formData,
-        metadata: { skills: [], languages: [] }
+        metadata: { skills: [], languages: [] },
       });
       setIsDialogOpen(false);
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        departmentId: '',
-        positionId: '',
-        startDate: new Date().toISOString().split('T')[0],
-        status: 'active'
-      });
-      await fetchData();
+      setFormData(EMPTY_FORM);
     } catch (error) {
-      console.error("Error adding employee:", error);
-    } finally {
-      setIsSubmitting(false);
+      console.error('Error adding employee:', error);
     }
   };
 
@@ -355,9 +326,11 @@ export default function EmployeesPage() {
                 </TableCell>
                 <TableCell className="py-3 text-right pr-6" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-2">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md">
-                      <ArrowRight size={14} />
-                    </Button>
+                    <Link href={`/employees/${emp.id}`} onClick={e => e.stopPropagation()}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md">
+                        <ArrowRight size={14} />
+                      </Button>
+                    </Link>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md">
@@ -461,7 +434,9 @@ export default function EmployeesPage() {
 
               <div className="pt-6 border-t border-border/50 flex justify-end gap-2">
                 <Button variant="ghost" className="h-9 rounded-md text-sm" onClick={() => setIsSheetOpen(false)}>Zamknij</Button>
-                <Button className="h-9 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 text-sm">Pełny profil</Button>
+                <Link href={selectedEmployee ? `/employees/${selectedEmployee.id}` : '#'}>
+                  <Button className="h-9 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 text-sm">Pełny profil</Button>
+                </Link>
               </div>
             </div>
           )}

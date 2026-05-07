@@ -1,4 +1,5 @@
-import { db } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { 
   collection, 
   getDocs, 
@@ -97,4 +98,29 @@ export const addJobHistory = async (employeeId: string, history: Omit<JobHistory
   const historyCol = collection(db, COLLECTION_NAME, employeeId, "job_history");
   const docRef = await addDoc(historyCol, history);
   return docRef.id;
+};
+
+export const updateEmployee = async (id: string, data: Partial<Omit<Employee, 'id'>>): Promise<void> => {
+  const ref = doc(db, COLLECTION_NAME, id);
+  await updateDoc(ref, data as Record<string, unknown>);
+};
+
+export const uploadAvatar = async (
+  employeeId: string,
+  file: File,
+  onProgress?: (pct: number) => void
+): Promise<string> => {
+  const storageRef = ref(storage, `avatars/${employeeId}/${Date.now()}_${file.name}`);
+  await new Promise<void>((resolve, reject) => {
+    const task = uploadBytesResumable(storageRef, file);
+    task.on(
+      'state_changed',
+      (snap) => onProgress?.(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
+      reject,
+      () => resolve()
+    );
+  });
+  const url = await getDownloadURL(storageRef);
+  await updateEmployee(employeeId, { avatarUrl: url });
+  return url;
 };

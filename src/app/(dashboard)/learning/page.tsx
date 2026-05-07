@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { 
   BookOpen, 
   CheckCircle2, 
@@ -17,32 +17,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
-import { getAvailableTrainings, getEmployeeTrainings } from '@/services/db/trainings';
-import { Training, EmployeeTraining } from '@/types';
+import { EmployeeTraining } from '@/types';
 import { format, differenceInDays, parseISO } from 'date-fns';
+import { useTrainings, useEmployeeTrainings } from '@/hooks/use-learning';
 
 export default function LearningPage() {
-  const [trainings, setTrainings] = useState<Training[]>([]);
-  const [empTrainings, setEmpTrainings] = useState<EmployeeTraining[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [available, assigned] = await Promise.all([
-          getAvailableTrainings(),
-          getEmployeeTrainings("EMP-001") // Mock current user
-        ]);
-        setTrainings(available);
-        setEmpTrainings(assigned);
-      } catch (error) {
-        console.error("Error fetching learning data:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
+  const { data: trainings = [], isLoading: trainingsLoading } = useTrainings();
+  const { data: empTrainings = [], isLoading: empLoading } = useEmployeeTrainings('EMP-001');
+  const loading = trainingsLoading || empLoading;
 
   const getStatusBadge = (training: EmployeeTraining) => {
     if (training.status === 'completed') {

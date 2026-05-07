@@ -16,6 +16,7 @@ export interface Employee {
   positionId: string;
   status: 'active' | 'inactive' | 'on-leave';
   startDate: string;
+  avatarUrl?: string;
   metadata?: {
     skills?: string[];
     languages?: string[];
@@ -87,6 +88,9 @@ export interface Candidate {
   email: string;
   stage: 'applied' | 'screening' | 'interview' | 'offer' | 'hired' | 'rejected';
   score: number;
+  notes?: string;
+  phone?: string;
+  appliedAt?: string;
 }
 
 export interface Review {
@@ -126,4 +130,31 @@ export interface Benefit {
 export interface EmployeeBenefit {
   employeeId: string;
   benefitIds: string[];
+}
+
+export interface HRDocument {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  storagePath: string;
+  downloadURL: string;
+  uploadedBy: string;
+  employeeId?: string;
+  status: 'available' | 'pending' | 'signed';
+  createdAt: string;
+}
+
+export interface UserSettings {
+  uid: string;
+  displayName: string;
+  theme: 'light' | 'dark' | 'system';
+  language: 'pl' | 'en';
+  notifications: {
+    email: boolean;
+    push: boolean;
+    leaveRequests: boolean;
+    attendance: boolean;
+  };
+  companyName: string;
 }

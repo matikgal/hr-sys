@@ -1,16 +1,21 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { EmploymentChart } from '@/components/features/dashboard/employment-chart';
 import { DepartmentDonut } from '@/components/features/dashboard/department-donut';
 import { RecentActivity } from '@/components/features/dashboard/recent-activity';
 import { AnomaliesAlert } from '@/components/features/dashboard/anomalies-alert';
-import { getDashboardStats, DashboardStats } from '@/services/db/system';
-import { getAllEmployees } from '@/services/db/employees';
-import { getPendingLeaves, approveLeave, rejectLeave } from '@/services/db/leaves';
+import { DashboardStats } from '@/services/db/system';
 import { Employee, Leave } from '@/types';
 import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  useDashboardStats,
+  useDashboardEmployees,
+  usePendingLeaves,
+  useApproveLeaveDashboard,
+  useRejectLeaveDashboard,
+} from '@/hooks/use-dashboard';
 import {
   RefreshCw,
   UserPlus,
@@ -58,59 +63,21 @@ const SPARKS = {
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [pendingLeaves, setPendingLeaves] = useState<Leave[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [empLoading, setEmpLoading] = useState(true);
-  const [leavesLoading, setLeavesLoading] = useState(true);
-  const [leavesProcessing, setLeavesProcessing] = useState<Set<string>>(new Set());
 
-  const fetchStats = async () => {
-    setLoading(true);
-    try { setStats(await getDashboardStats()); }
-    catch (err) { console.error(err); }
-    finally { setLoading(false); }
-  };
+  const { data: stats, isLoading: loading, refetch: refetchStats } = useDashboardStats();
+  const { data: employees = [], isLoading: empLoading, refetch: refetchEmployees } = useDashboardEmployees();
+  const { data: pendingLeaves = [], isLoading: leavesLoading, refetch: refetchLeaves } = usePendingLeaves();
+  const approveMutation = useApproveLeaveDashboard();
+  const rejectMutation = useRejectLeaveDashboard();
 
-  const fetchEmployees = async () => {
-    setEmpLoading(true);
-    try { setEmployees(await getAllEmployees({ limit: 8 })); }
-    catch (err) { console.error(err); }
-    finally { setEmpLoading(false); }
-  };
-
-  const fetchPendingLeaves = async () => {
-    setLeavesLoading(true);
-    try { setPendingLeaves(await getPendingLeaves(5)); }
-    catch (err) { console.error(err); }
-    finally { setLeavesLoading(false); }
-  };
-
-  useEffect(() => {
-    fetchStats();
-    fetchEmployees();
-    fetchPendingLeaves();
-  }, []);
-
-  const handleApprove = async (leaveId: string) => {
+  const handleApprove = (leaveId: string) => {
     if (!user?.uid) return;
-    setLeavesProcessing(prev => new Set(prev).add(leaveId));
-    try {
-      await approveLeave(leaveId, user.uid);
-      setPendingLeaves(prev => prev.filter(l => l.id !== leaveId));
-    } catch (err) { console.error(err); }
-    finally { setLeavesProcessing(prev => { const n = new Set(prev); n.delete(leaveId); return n; }); }
+    approveMutation.mutate({ leaveId, approverId: user.uid });
   };
 
-  const handleReject = async (leaveId: string) => {
+  const handleReject = (leaveId: string) => {
     if (!user?.uid) return;
-    setLeavesProcessing(prev => new Set(prev).add(leaveId));
-    try {
-      await rejectLeave(leaveId, user.uid);
-      setPendingLeaves(prev => prev.filter(l => l.id !== leaveId));
-    } catch (err) { console.error(err); }
-    finally { setLeavesProcessing(prev => { const n = new Set(prev); n.delete(leaveId); return n; }); }
+    rejectMutation.mutate({ leaveId, approverId: user.uid });
   };
 
   const firstName = user?.displayName?.split(' ')[0] ?? 'Adminze';
@@ -135,7 +102,7 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button
-            onClick={() => { fetchStats(); fetchEmployees(); fetchPendingLeaves(); }}
+            onClick={() => { refetchStats(); refetchEmployees(); refetchLeaves(); }}
             disabled={loading}
             className="h-9 px-3.5 rounded-lg border border-border bg-card text-foreground/70 hover:bg-accent text-[13px] font-medium flex items-center gap-2 transition-colors disabled:opacity-50 shadow-sm"
           >
@@ -369,7 +336,7 @@ export default function DashboardPage() {
             ) : (
               <div className="divide-y divide-border/30">
                 {pendingLeaves.map(leave => {
-                  const processing = leavesProcessing.has(leave.id);
+                  const processing = approveMutation.isPending || rejectMutation.isPending;
                   let rangeLabel = '';
                   try {
                     rangeLabel = `${format(parseISO(leave.startDate), 'd MMM', { locale: pl })} – ${format(parseISO(leave.endDate), 'd MMM yyyy', { locale: pl })}`;

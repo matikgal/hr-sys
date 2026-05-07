@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Heart, 
   Coffee, 
@@ -22,65 +22,40 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
-import { getAvailableBenefits, getEmployeeBenefits, enrollInBenefit, unenrollFromBenefit } from '@/services/db/benefits';
 import { Benefit } from '@/types';
 import { useAuth } from '@/context/auth-context';
 import { cn } from '@/lib/utils';
+import { useBenefitsCatalog, useEmployeeBenefits, useEnrollBenefit, useUnenrollBenefit } from '@/hooks/use-benefits';
+
+const EMPLOYEE_ID = 'EMP-001';
 
 export default function BenefitsPage() {
   const { user } = useAuth();
-  const [benefits, setBenefits] = useState<Benefit[]>([]);
-  const [enrolledIds, setEnrolledIds] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const { data: benefits = [], isLoading: benefitsLoading } = useBenefitsCatalog();
+  const { data: enrolledIds = [], isLoading: enrolledLoading } = useEmployeeBenefits(EMPLOYEE_ID);
+  const loading = benefitsLoading || enrolledLoading;
+
+  const enrollMutation = useEnrollBenefit(EMPLOYEE_ID);
+  const unenrollMutation = useUnenrollBenefit(EMPLOYEE_ID);
+  const isSubmitting = enrollMutation.isPending || unenrollMutation.isPending
+    ? (enrollMutation.variables ?? unenrollMutation.variables ?? null)
+    : null;
 
   const budgetLimit = 500;
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [available, enrolled] = await Promise.all([
-        getAvailableBenefits(),
-        getEmployeeBenefits("EMP-001") // Mock current user
-      ]);
-      setBenefits(available);
-      setEnrolledIds(enrolled);
-    } catch (error) {
-      console.error("Error fetching benefits data:", error);
-    } finally {
-      setLoading(false);
-    }
+  const handleEnroll = (benefitId: string) => {
+    enrollMutation.mutate(benefitId, {
+      onError: (err: any) => {
+        setError(err.message);
+        setTimeout(() => setError(null), 5000);
+      },
+    });
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const handleEnroll = async (benefitId: string) => {
-    setIsSubmitting(benefitId);
-    setError(null);
-    try {
-      await enrollInBenefit("EMP-001", benefitId);
-      await fetchData();
-    } catch (err: any) {
-      setError(err.message);
-      setTimeout(() => setError(null), 5000);
-    } finally {
-      setIsSubmitting(null);
-    }
-  };
-
-  const handleUnenroll = async (benefitId: string) => {
-    setIsSubmitting(benefitId);
-    try {
-      await unenrollFromBenefit("EMP-001", benefitId);
-      await fetchData();
-    } catch (err: any) {
-      console.error(err);
-    } finally {
-      setIsSubmitting(null);
-    }
+  const handleUnenroll = (benefitId: string) => {
+    unenrollMutation.mutate(benefitId);
   };
 
   const currentSpend = benefits

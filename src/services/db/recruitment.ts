@@ -53,6 +53,11 @@ export const addCandidate = async (candidate: Omit<Candidate, 'id'>): Promise<st
   return docRef.id;
 };
 
+export const updateCandidateNotes = async (candidateId: string, notes: string): Promise<void> => {
+  const docRef = doc(db, CANDIDATES_COLLECTION, candidateId);
+  await updateDoc(docRef, { notes });
+};
+
 // Logic: Hire Candidate -> Convert to Employee
 export const hireCandidate = async (candidateId: string, jobId: string): Promise<string> => {
   const employeeId = await runTransaction(db, async (transaction) => {
@@ -87,11 +92,20 @@ export const hireCandidate = async (candidateId: string, jobId: string): Promise
     };
 
     transaction.set(newEmployeeRef, newEmployee);
-    
+
+    // 3. Create default leave balance
+    const balanceRef = doc(db, 'leave_balances', newEmployeeRef.id);
+    transaction.set(balanceRef, {
+      employeeId: newEmployeeRef.id,
+      vacationTotal: 26,
+      vacationUsed: 0,
+      sickUsed: 0,
+    });
+
     return newEmployeeRef.id;
   });
 
-  // 3. Auto-assign onboarding trainings
+  // 4. Auto-assign onboarding trainings
   try {
     await autoAssignOnboardingTrainings(employeeId);
   } catch (err) {
