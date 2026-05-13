@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { EmploymentChart } from '@/components/features/dashboard/employment-chart';
 import { DepartmentDonut } from '@/components/features/dashboard/department-donut';
 import { RecentActivity } from '@/components/features/dashboard/recent-activity';
@@ -80,6 +81,7 @@ export default function DashboardPage() {
     rejectMutation.mutate({ leaveId, approverId: user.uid });
   };
 
+  const router = useRouter();
   const firstName = user?.displayName?.split(' ')[0] ?? 'Adminze';
   const today = format(new Date(), "EEEE, d MMMM", { locale: pl });
 
@@ -259,7 +261,7 @@ export default function DashboardPage() {
                   employees.map(emp => {
                     const initials = `${emp.firstName[0]}${emp.lastName[0]}`.toUpperCase();
                     return (
-                      <tr key={emp.id} className="border-b border-border/30 last:border-0 hover:bg-accent/40 transition-colors group">
+                      <tr key={emp.id} onClick={() => router.push(`/employees/${emp.id}`)} className="border-b border-border/30 last:border-0 hover:bg-accent/40 transition-colors group cursor-pointer">
                         <td className="px-6 py-3">
                           <div className="flex items-center gap-3">
                             <div className="size-[30px] rounded-full bg-[#e6f1ea] flex items-center justify-center shrink-0">

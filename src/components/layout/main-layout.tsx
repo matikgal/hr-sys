@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
 import { Skeleton } from "@/components/ui/skeleton";
+import ErrorBoundary from "@/components/ui/error-boundary";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -80,7 +81,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
         <main className="flex-1 overflow-y-auto no-scrollbar">
-          {children}
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
         </main>
       </div>
     </div>

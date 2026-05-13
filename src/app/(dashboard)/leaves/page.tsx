@@ -42,6 +42,7 @@ import {
 import { Leave, LeaveBalance, Employee } from '@/types';
 import { useAuth } from '@/context/auth-context';
 import { useLeaves, useLeaveBalance, useRequestLeave, useApproveLeave, useRejectLeave } from '@/hooks/use-leaves';
+import { exportToCsv } from '@/lib/export-csv';
 import { useEmployeeByAuthId } from '@/hooks/use-employees';
 import { format, differenceInBusinessDays, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths, isSameDay } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -138,6 +139,20 @@ export default function LeavesPage() {
           <p className="text-sm text-muted-foreground mt-1">Zarządzaj nieobecnościami i planuj grafik zespołu.</p>
         </div>
         <div className="flex items-center gap-3">
+          {canManageLeaves && (
+            <Button variant="outline" size="sm" className="h-9"
+              onClick={() => exportToCsv(`urlopy_${new Date().toISOString().split('T')[0]}.csv`, leaves.map(l => ({
+                Pracownik: l.employeeName ?? l.employeeId,
+                Typ: l.type,
+                'Data od': l.startDate,
+                'Data do': l.endDate,
+                'Liczba dni': l.daysCount,
+                Status: l.status,
+                'Data złożenia': l.createdAt,
+              })))}>
+              <FileText size={14} className="mr-2" /> Eksportuj CSV
+            </Button>
+          )}
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
               <Button size="sm" className="h-9">

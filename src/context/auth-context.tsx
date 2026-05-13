@@ -29,16 +29,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // In a real app, we might store role in Firestore or Custom Claims
-        // For this enterprise demo, we'll assume admin if email is admin@hr.local
-        const role = firebaseUser.email === "admin@hr.local" ? "admin" : "employee";
-        
+        let role: User['role'] = 'employee';
+        try {
+          const snap = await getDoc(doc(db, 'employees', firebaseUser.uid));
+          if (snap.exists()) {
+            const r = snap.data()?.metadata?.role;
+            if (['admin', 'hr', 'manager', 'employee'].includes(r)) role = r;
+          } else if (firebaseUser.email === 'admin@hr.local') {
+            role = 'admin';
+          }
+        } catch {
+          if (firebaseUser.email === 'admin@hr.local') role = 'admin';
+        }
+
         setUser({
           uid: firebaseUser.uid,
           email: firebaseUser.email,
           displayName: firebaseUser.displayName,
           photoURL: firebaseUser.photoURL,
-          role: role as any,
+          role,
         });
       } else {
         setUser(null);

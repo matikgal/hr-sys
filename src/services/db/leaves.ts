@@ -16,6 +16,7 @@ import {
   Timestamp
 } from "firebase/firestore";
 import { Leave, LeaveBalance, Employee } from "@/types";
+import { logAudit } from "./audit";
 
 const COLLECTION_NAME = "leaves";
 const BALANCES_COLLECTION = "leave_balances";
@@ -193,29 +194,41 @@ export const approveLeave = async (leaveId: string, approverId: string): Promise
     if (balanceSnap.exists()) {
       const balance = balanceSnap.data() as LeaveBalance;
       if (leave.type === 'vacation') {
-        transaction.update(balanceRef, {
-          vacationUsed: balance.vacationUsed + leave.daysCount
-        });
+        transaction.update(balanceRef, { vacationUsed: balance.vacationUsed + leave.daysCount });
       } else if (leave.type === 'sick') {
-        transaction.update(balanceRef, {
-          sickUsed: balance.sickUsed + leave.daysCount
-        });
+        transaction.update(balanceRef, { sickUsed: balance.sickUsed + leave.daysCount });
       }
     }
+  });
+  await logAudit({
+    action: 'approve_leave',
+    module: 'leaves',
+    actorId: approverId,
+    actorName: approverId,
+    targetId: leaveId,
+    after: { status: 'approved', approverId },
   });
 };
 
 export const rejectLeave = async (leaveId: string, approverId: string): Promise<void> => {
   const leaveRef = doc(db, COLLECTION_NAME, leaveId);
-  await updateDoc(leaveRef, {
-    status: 'rejected',
-    approverId
+  await updateDoc(leaveRef, { status: 'rejected', approverId });
+  await logAudit({
+    action: 'reject_leave',
+    module: 'leaves',
+    actorId: approverId,
+    actorName: approverId,
+    targetId: leaveId,
+    after: { status: 'rejected', approverId },
   });
 };
 
 export const getPendingLeaves = async (max = 5): Promise<Leave[]> => {
   const col = collection(db, COLLECTION_NAME);
-  const q = query(col, where("status", "==", "pending"), orderBy("createdAt", "desc"), limit(max));
+  const q = query(col, where("status", "==", "pending"), limit(max * 4));
   const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Leave));
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() } as Leave))
+    .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
+    .slice(0, max);
 };

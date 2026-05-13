@@ -50,8 +50,9 @@ import {
 } from "@/components/ui/tabs";
 import Link from 'next/link';
 import { Employee, Department } from '@/types';
-import { useEmployees, useDepartments, useAddEmployee } from '@/hooks/use-employees';
+import { useEmployees, useEmployeesPaginated, useDepartments, useAddEmployee } from '@/hooks/use-employees';
 import { cn } from '@/lib/utils';
+import { exportToCsv } from '@/lib/export-csv';
 
 import {
   Dialog,
@@ -81,7 +82,14 @@ export default function EmployeesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState(EMPTY_FORM);
 
-  const { data: employees = [], isLoading: empLoading } = useEmployees();
+  const {
+    data: pagedData,
+    isLoading: empLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useEmployeesPaginated();
+  const employees = pagedData?.pages.flatMap(p => p.employees) ?? [];
   const { data: departments = [], isLoading: deptLoading } = useDepartments();
   const loading = empLoading || deptLoading;
 
@@ -144,7 +152,16 @@ export default function EmployeesPage() {
           <p className="text-sm text-muted-foreground mt-1">Centralne repozytorium danych Twojego zespołu</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="h-9 rounded-md border-border font-medium">
+          <Button variant="outline" size="sm" className="h-9 rounded-md border-border font-medium"
+            onClick={() => exportToCsv(`pracownicy_${new Date().toISOString().split('T')[0]}.csv`, employees.map(e => ({
+              Imię: e.firstName,
+              Nazwisko: e.lastName,
+              Email: e.email,
+              Dział: getDepartmentName(e.departmentId),
+              Stanowisko: e.positionId,
+              Status: e.status,
+              'Data zatrudnienia': e.startDate,
+            })))}>
             <Download size={14} className="mr-2" /> Eksportuj
           </Button>
           
@@ -352,6 +369,13 @@ export default function EmployeesPage() {
         {!loading && filteredEmployees.length === 0 && (
           <div className="py-20 text-center">
             <p className="text-sm font-medium text-muted-foreground">Nie znaleziono pracowników.</p>
+          </div>
+        )}
+        {hasNextPage && !searchTerm && (
+          <div className="flex justify-center py-4 border-t border-border">
+            <Button variant="outline" size="sm" onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
+              {isFetchingNextPage ? 'Ładowanie…' : 'Załaduj więcej'}
+            </Button>
           </div>
         )}
       </div>

@@ -1,10 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import {
-  collection, addDoc, getDocs, deleteDoc, doc, updateDoc, setDoc, writeBatch,
+  collection, addDoc, getDocs, doc, updateDoc, setDoc, writeBatch, deleteDoc,
 } from 'firebase/firestore';
+import {
+  createUserWithEmailAndPassword, signInWithEmailAndPassword,
+} from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { AlertCircle, CheckCircle2, Database, Trash2, Zap, Loader2 } from 'lucide-react';
@@ -28,6 +31,24 @@ async function clearCollection(name: string) {
   await batch.commit();
 }
 
+// ─── demo accounts ─────────────────────────────────────────────────────────
+const DEMO_ACCOUNTS = [
+  { email: 'admin@hr.local',   password: 'haslo123', role: 'admin',    fn: 'System',  ln: 'Admin',    pos: 'System Administrator', dept: 'Human Resources' },
+  { email: 'hr@hr.local',      password: 'haslo123', role: 'hr',       fn: 'Hanna',   ln: 'Nowak',    pos: 'HR Specialist',        dept: 'Human Resources' },
+  { email: 'manager@hr.local', password: 'haslo123', role: 'manager',  fn: 'Marek',   ln: 'Szef',     pos: 'Team Manager',         dept: 'Inżynieria' },
+  { email: 'user@hr.local',    password: 'haslo123', role: 'employee', fn: 'Jan',     ln: 'Testowy',  pos: 'Junior Developer',     dept: 'Inżynieria' },
+] as const;
+
+async function getOrCreateAuthUid(email: string, password: string): Promise<string> {
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    return cred.user.uid;
+  } catch {
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    return cred.user.uid;
+  }
+}
+
 // ─── seed ──────────────────────────────────────────────────────────────────
 async function runSeed(log: (msg: string) => void) {
   const COLS = ['departments','employees','leaves','leave_balances','attendance',
@@ -35,6 +56,24 @@ async function runSeed(log: (msg: string) => void) {
                 'reviews','jobs','candidates'];
   log('Czyszczenie kolekcji…');
   for (const c of COLS) { await clearCollection(c); log(`  ✓ ${c}`); }
+
+  // 0. DEMO AUTH ACCOUNTS
+  log('Tworzenie kont demo (Auth + Firestore)…');
+  const demoUids: Record<string, string> = {};
+  for (const acc of DEMO_ACCOUNTS) {
+    const uid = await getOrCreateAuthUid(acc.email, acc.password);
+    demoUids[acc.email] = uid;
+    await setDoc(doc(db, 'employees', uid), {
+      firstName: acc.fn, lastName: acc.ln,
+      email: acc.email, authId: uid,
+      departmentId: '', positionId: acc.pos,
+      status: 'active', startDate: today,
+      metadata: { role: acc.role, skills: [], languages: ['PL'] },
+    });
+    log(`  ✓ ${acc.role} — ${acc.email} (uid: ${uid.slice(0,8)}…)`);
+  }
+  // sign back in as admin so rest of seed runs under admin session
+  await signInWithEmailAndPassword(auth, 'admin@hr.local', 'haslo123');
 
   // 1. DEPARTMENTS
   log('Tworzenie działów…');
@@ -149,17 +188,17 @@ async function runSeed(log: (msg: string) => void) {
       employeeName: leaveNames[lr.empIdx],
       type: lr.type, startDate: sd, endDate: ed,
       daysCount: days, status: lr.status,
-      approverId: lr.status === 'approved' ? empRefs[8] : undefined,
+      ...(lr.status === 'approved' || lr.status === 'auto_approved' ? { approverId: empRefs[8] } : {}),
       createdAt: isoDate(lr.from + 2),
     });
   }
 
-  // 5. LEAVE BALANCES
+  // 5. LEAVE BALANCES — setDoc with employeeId as doc ID so approveLeave can read it
   log('Salda urlopowe…');
   for (let i = 0; i < empRefs.length; i++) {
     const vacUsed = rnd(0, 20);
-    await addDoc(collection(db,'leave_balances'), {
-      employeeId: empRefs[i], vacationTotal: 26, vacationUsed: vacUsed, sickUsed: rnd(0,8),
+    await setDoc(doc(db, 'leave_balances', empRefs[i]), {
+      employeeId: empRefs[i], vacationTotal: 26, vacationUsed: vacUsed, sickUsed: rnd(0, 8),
     });
   }
 
@@ -369,8 +408,8 @@ export default function SeedPage() {
           </div>
           <CardTitle className="text-xl">Inicjalizacja bazy danych</CardTitle>
           <CardDescription>
-            Generuje 18 pracowników, 6 działów, urlopy, oceny (5 kategorii),<br/>
-            szkolenia, benefity, 5 ogłoszeń i 12 kandydatów.
+            Tworzy 4 konta Auth (admin / hr / manager / pracownik), 18 pracowników,<br/>
+            6 działów, urlopy, oceny, szkolenia, benefity, 5 ogłoszeń i 12 kandydatów.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">

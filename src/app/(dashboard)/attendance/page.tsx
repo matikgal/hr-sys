@@ -31,12 +31,14 @@ import {
 } from "@/components/ui/hover-card";
 import { Attendance, Employee } from '@/types';
 import { cn } from '@/lib/utils';
-import { useEmployees } from '@/hooks/use-employees';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { useEmployeeByAuthId } from '@/hooks/use-employees';
+import { useAuth } from '@/context/auth-context';
 import { useTodayAttendance, useAttendanceHistory, useClockIn, useClockOut } from '@/hooks/use-attendance';
 
 export default function AttendancePage() {
-  const { data: employees = [], isLoading: empLoading } = useEmployees({ limit: 1 });
-  const currentEmployee = employees[0] ?? null;
+  const { user } = useAuth();
+  const { data: currentEmployee, isLoading: empLoading } = useEmployeeByAuthId(user?.uid);
   const empId = currentEmployee?.id;
 
   const { data: todayRecord, isLoading: todayLoading } = useTodayAttendance(empId);
@@ -216,6 +218,29 @@ export default function AttendancePage() {
           </div>
         </div>
       </div>
+
+      {/* Attendance Chart */}
+      {history.length > 0 && (
+        <div className="bg-card border border-border rounded-md overflow-hidden">
+          <div className="px-6 py-4 border-b border-border bg-accent/30">
+            <h3 className="text-sm font-bold text-foreground">Godziny pracy — ostatnie 14 dni</h3>
+          </div>
+          <div className="p-6">
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={history.slice(0, 14).reverse().map(r => ({ date: r.date.slice(5), hours: r.totalHours }))} barSize={24}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis dataKey="date" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} unit="h" width={32} />
+                <Tooltip
+                  formatter={(v) => [`${v}h`, 'Godziny']}
+                  contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid hsl(var(--border))' }}
+                />
+                <Bar dataKey="hours" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* History Table */}
       <div className="bg-card border border-border rounded-md overflow-hidden">

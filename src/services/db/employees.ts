@@ -43,6 +43,28 @@ export const getAllEmployees = async (options?: {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Employee));
 };
 
+const PAGE_SIZE = 15;
+
+export const getEmployeesPaginated = async (
+  cursor?: QueryDocumentSnapshot<DocumentData>,
+  options?: { status?: Employee['status']; departmentId?: string }
+): Promise<{ employees: Employee[]; lastDoc: QueryDocumentSnapshot<DocumentData> | null; hasMore: boolean }> => {
+  const col = collection(db, COLLECTION_NAME);
+  let q = query(col, orderBy("lastName", "asc"), limit(PAGE_SIZE + 1));
+  if (options?.status) q = query(q, where("status", "==", options.status));
+  if (options?.departmentId) q = query(q, where("departmentId", "==", options.departmentId));
+  if (cursor) q = query(q, startAfter(cursor));
+
+  const snapshot = await getDocs(q);
+  const hasMore = snapshot.docs.length > PAGE_SIZE;
+  const docs = hasMore ? snapshot.docs.slice(0, PAGE_SIZE) : snapshot.docs;
+  return {
+    employees: docs.map(d => ({ id: d.id, ...d.data() } as Employee)),
+    lastDoc: docs.length > 0 ? docs[docs.length - 1] : null,
+    hasMore,
+  };
+};
+
 export const getEmployeeById = async (id: string): Promise<Employee | null> => {
   const docRef = doc(db, COLLECTION_NAME, id);
   const docSnap = await getDoc(docRef);

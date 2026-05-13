@@ -14,10 +14,13 @@ import { getEmployeeLeaves, getLeaveBalance } from '@/services/db/leaves';
 import { getEmployeeReviews } from '@/services/db/performance';
 import { getEmployeeTrainings, getAvailableTrainings } from '@/services/db/trainings';
 import { getDepartments } from '@/services/db/system';
-import { Employee, Leave, LeaveBalance, Review, EmployeeTraining, Training, Department, JobHistory } from '@/types';
+import { getPositions } from '@/services/db/positions';
+import { getEmployeeAttendanceHistory } from '@/services/db/attendance';
+import { Employee, Leave, LeaveBalance, Review, EmployeeTraining, Training, Department, JobHistory, Position, Attendance } from '@/types';
 import { cn } from '@/lib/utils';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, ReferenceLine } from 'recharts';
 
 const STATUS_BADGE: Record<Employee['status'], string> = {
   active:   'bg-emerald-50 text-emerald-700 border border-emerald-100',
@@ -62,6 +65,8 @@ export default function EmployeeProfilePage() {
   const [trainingDefs, setTrainingDefs] = useState<Training[]>([]);
   const [jobHistory, setJobHistory]   = useState<JobHistory[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [loading, setLoading]   = useState(true);
 
   /* avatar upload */
@@ -85,7 +90,9 @@ export default function EmployeeProfilePage() {
       getAvailableTrainings(),
       getEmployeeJobHistory(id),
       getDepartments(),
-    ]).then(([e, l, b, r, t, td, jh, d]) => {
+      getPositions(),
+      getEmployeeAttendanceHistory(id, 60),
+    ]).then(([e, l, b, r, t, td, jh, d, pos, att]) => {
       setEmp(e);
       setLeaves(l);
       setBalance(b);
@@ -94,6 +101,8 @@ export default function EmployeeProfilePage() {
       setTrainingDefs(td);
       setJobHistory(jh);
       setDepartments(d);
+      setPositions(pos);
+      setAttendance(att);
     }).catch(console.error).finally(() => setLoading(false));
   }, [id]);
 
@@ -128,6 +137,7 @@ export default function EmployeeProfilePage() {
   };
 
   const deptName = (deptId: string) => departments.find(d => d.id === deptId)?.name ?? deptId;
+  const posName = (posId: string) => positions.find(p => p.id === posId)?.name ?? posId;
   const trainingTitle = (tid: string) => trainingDefs.find(t => t.id === tid)?.title ?? tid;
 
   if (loading) return <ProfileSkeleton />;
@@ -181,10 +191,10 @@ export default function EmployeeProfilePage() {
         <div className="flex-1 min-w-0">
           {editing ? (
             <div className="grid grid-cols-2 gap-3 mb-3">
-              {(['firstName','lastName','positionId','email'] as const).map(field => (
+              {(['firstName','lastName','email'] as const).map(field => (
                 <div key={field}>
                   <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide block mb-1">
-                    {{ firstName:'Imię', lastName:'Nazwisko', positionId:'Stanowisko', email:'Email' }[field]}
+                    {{ firstName:'Imię', lastName:'Nazwisko', email:'Email' }[field]}
                   </label>
                   <input
                     value={(editData[field] as string) ?? ''}
@@ -193,6 +203,17 @@ export default function EmployeeProfilePage() {
                   />
                 </div>
               ))}
+              <div>
+                <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide block mb-1">Stanowisko</label>
+                <select
+                  value={editData.positionId ?? ''}
+                  onChange={e => setEditData(prev => ({ ...prev, positionId: e.target.value }))}
+                  className="w-full h-8 px-3 text-[13px] border border-border rounded-lg bg-background text-foreground focus:outline-none"
+                >
+                  <option value="">— wybierz —</option>
+                  {positions.map(p => <option key={p.id} value={p.id}>{p.name}{p.level ? ` (${p.level})` : ''}</option>)}
+                </select>
+              </div>
               <div>
                 <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide block mb-1">Dział</label>
                 <select
@@ -224,7 +245,7 @@ export default function EmployeeProfilePage() {
                   {STATUS_LABEL[emp.status]}
                 </span>
               </div>
-              <p className="text-[14px] text-muted-foreground mb-3">{emp.positionId} · {deptName(emp.departmentId)}</p>
+              <p className="text-[14px] text-muted-foreground mb-3">{posName(emp.positionId)} · {deptName(emp.departmentId)}</p>
               <div className="flex flex-wrap gap-4 text-[12px] text-muted-foreground">
                 <span className="flex items-center gap-1.5"><Mail size={13} />{emp.email}</span>
                 <span className="flex items-center gap-1.5"><Building2 size={13} />{deptName(emp.departmentId)}</span>
@@ -276,10 +297,11 @@ export default function EmployeeProfilePage() {
       <Tabs defaultValue="leaves">
         <TabsList className="bg-background border border-border rounded-xl p-1 h-auto gap-1">
           {[
-            { value: 'leaves',   label: 'Urlopy' },
-            { value: 'reviews',  label: 'Oceny' },
-            { value: 'trainings',label: 'Szkolenia' },
-            { value: 'history',  label: 'Historia' },
+            { value: 'leaves',     label: 'Urlopy' },
+            { value: 'attendance', label: 'Czas pracy' },
+            { value: 'reviews',    label: 'Oceny' },
+            { value: 'trainings',  label: 'Szkolenia' },
+            { value: 'history',    label: 'Historia' },
           ].map(t => (
             <TabsTrigger key={t.value} value={t.value}
               className="text-[13px] font-medium px-4 py-2 rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground"
@@ -338,6 +360,11 @@ export default function EmployeeProfilePage() {
               </table>
             )}
           </div>
+        </TabsContent>
+
+        {/* Czas pracy */}
+        <TabsContent value="attendance" className="mt-4 space-y-4">
+          <AttendanceSummary records={attendance} />
         </TabsContent>
 
         {/* Oceny */}
@@ -465,6 +492,171 @@ function BalanceBar({ label, used, total, color }: { label: string; used: number
         <div className={cn('h-full rounded-full transition-all', color)} style={{ width: `${pct}%` }} />
       </div>
     </div>
+  );
+}
+
+function AttendanceSummary({ records }: { records: Attendance[] }) {
+  const now = new Date();
+  const monthStart = startOfMonth(now);
+  const monthEnd = endOfMonth(now);
+
+  const thisMonth = records.filter(r => {
+    try { return isWithinInterval(parseISO(r.date), { start: monthStart, end: monthEnd }); }
+    catch { return false; }
+  });
+
+  const totalHoursMonth = thisMonth.reduce((s, r) => s + (r.totalHours ?? 0), 0);
+  const daysWorked = thisMonth.length;
+  const avgHours = daysWorked > 0 ? (totalHoursMonth / daysWorked).toFixed(1) : '0.0';
+  const lateCount = records.filter(r => r.status === 'late').length;
+
+  const chartData = records
+    .slice(0, 14)
+    .reverse()
+    .map(r => ({ date: r.date.slice(5), hours: r.totalHours ?? 0 }));
+
+  const STATUS_CLS: Record<string, string> = {
+    present: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+    late:    'bg-amber-50 text-amber-700 border-amber-100',
+    absent:  'bg-red-50 text-red-700 border-red-100',
+    excused: 'bg-blue-50 text-blue-700 border-blue-100',
+  };
+  const STATUS_LBL: Record<string, string> = {
+    present: 'Obecny', late: 'Spóźnienie', absent: 'Nieobecny', excused: 'Usprawiedliwiony',
+  };
+
+  return (
+    <>
+      {/* KPI row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[
+          { label: 'Godziny (mies.)', value: `${totalHoursMonth.toFixed(1)}h`, sub: format(now, 'LLLL yyyy', { locale: pl }) },
+          { label: 'Dni w pracy',     value: daysWorked,                        sub: 'ten miesiąc' },
+          { label: 'Śr. godz./dzień', value: `${avgHours}h`,                    sub: 'z ostatnich wpisów' },
+          { label: 'Spóźnienia',      value: lateCount,                         sub: 'ostatnie 60 dni' },
+        ].map(s => (
+          <div key={s.label} className="bg-card border border-border rounded-xl p-4 shadow-sm">
+            <p className="text-[11px] font-medium text-muted-foreground mb-2">{s.label}</p>
+            <div className="text-[26px] font-semibold text-foreground leading-none">{s.value}</div>
+            <div className="text-[11px] text-muted-foreground mt-1">{s.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Bar chart */}
+      {chartData.length > 0 && (
+        <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+          <div className="px-5 py-5 flex items-center justify-between">
+            <div>
+              <h3 className="text-[13px] font-semibold text-foreground">Godziny pracy</h3>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Ostatnie 14 dni roboczych</p>
+            </div>
+            <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
+              <span className="flex items-center gap-1.5"><span className="size-2 rounded-sm bg-[#0a6b3e]" /> Pełny dzień (≥7h)</span>
+              <span className="flex items-center gap-1.5"><span className="size-2 rounded-sm bg-amber-400" /> Krótki (&lt;7h)</span>
+            </div>
+          </div>
+          <div className="px-4 pb-5">
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={chartData} barSize={28} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="gradGreen" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#0a6b3e" stopOpacity={0.9} />
+                    <stop offset="100%" stopColor="#0a6b3e" stopOpacity={0.55} />
+                  </linearGradient>
+                  <linearGradient id="gradAmber" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.9} />
+                    <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.55} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} opacity={0.6} />
+                <ReferenceLine y={8} stroke="#0a6b3e" strokeDasharray="4 3" strokeOpacity={0.35} label={{ value: '8h', position: 'insideTopRight', fontSize: 10, fill: '#0a6b3e', opacity: 0.6 }} />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                  tickLine={false}
+                  axisLine={false}
+                  dy={6}
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                  tickLine={false}
+                  axisLine={false}
+                  unit="h"
+                  width={32}
+                  domain={[0, 10]}
+                  ticks={[0, 2, 4, 6, 8, 10]}
+                />
+                <Tooltip
+                  cursor={{ fill: 'hsl(var(--accent))', radius: 6 }}
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload?.length) return null;
+                    const h = payload[0].value as number;
+                    return (
+                      <div className="bg-card border border-border rounded-lg shadow-lg px-3 py-2 text-[12px]">
+                        <p className="font-semibold text-foreground mb-0.5">{label}</p>
+                        <p className="text-muted-foreground">{h.toFixed(2)}h przepracowane</p>
+                        <p className={cn('text-[11px] mt-0.5 font-medium', h >= 7 ? 'text-[#0a6b3e]' : 'text-amber-600')}>
+                          {h >= 7 ? 'Pełny dzień' : 'Krótszy dzień'}
+                        </p>
+                      </div>
+                    );
+                  }}
+                />
+                <Bar dataKey="hours" radius={[5, 5, 2, 2]}>
+                  {chartData.map((entry, i) => (
+                    <Cell
+                      key={i}
+                      fill={entry.hours >= 7 ? 'url(#gradGreen)' : 'url(#gradAmber)'}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* History table */}
+      <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-border/60">
+          <h3 className="text-[13px] font-semibold text-foreground">Historia obecności (ostatnie 60 dni)</h3>
+        </div>
+        {records.length === 0 ? (
+          <div className="py-10 text-center text-[13px] text-muted-foreground">Brak danych o obecności.</div>
+        ) : (
+          <table className="w-full">
+            <thead>
+              <tr className="bg-background/60 border-b border-border/40">
+                {['Data', 'Wejście', 'Wyjście', 'Godziny', 'Status'].map(h => (
+                  <th key={h} className="px-5 py-2.5 text-left text-[10px] font-medium text-muted-foreground uppercase tracking-wide">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {records.map(r => {
+                const firstIn  = r.events.find(e => e.type === 'in');
+                const lastOut  = [...r.events].reverse().find(e => e.type === 'out');
+                const fmt = (ts: number) => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                return (
+                  <tr key={r.id} className="border-b border-border/30 last:border-0 hover:bg-accent/30 transition-colors">
+                    <td className="px-5 py-3 text-[13px] font-medium text-foreground">{r.date}</td>
+                    <td className="px-5 py-3 text-[13px] text-muted-foreground">{firstIn ? fmt(firstIn.timestamp) : '—'}</td>
+                    <td className="px-5 py-3 text-[13px] text-muted-foreground">{lastOut ? fmt(lastOut.timestamp) : '—'}</td>
+                    <td className="px-5 py-3 text-[13px] font-semibold text-foreground">{(r.totalHours ?? 0).toFixed(2)}h</td>
+                    <td className="px-5 py-3">
+                      <span className={cn('text-[11px] font-medium px-2 py-0.5 rounded-full border', STATUS_CLS[r.status] ?? 'bg-muted text-muted-foreground border-border')}>
+                        {STATUS_LBL[r.status] ?? r.status}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </>
   );
 }
 

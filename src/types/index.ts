@@ -145,6 +145,26 @@ export interface HRDocument {
   createdAt: string;
 }
 
+export interface AuditLog {
+  id: string;
+  action: string;
+  module: 'employees' | 'leaves' | 'recruitment' | 'trainings' | 'benefits' | 'documents' | 'settings' | 'attendance';
+  actorId: string;
+  actorName: string;
+  targetId?: string;
+  targetName?: string;
+  before?: Record<string, unknown>;
+  after?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface Position {
+  id: string;
+  name: string;
+  departmentId?: string;
+  level?: 'junior' | 'mid' | 'senior' | 'lead' | 'manager' | 'director';
+}
+
 export interface UserSettings {
   uid: string;
   displayName: string;

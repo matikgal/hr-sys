@@ -5,6 +5,7 @@ import { AuthProvider } from "@/context/auth-context";
 import QueryProvider from "@/lib/query-provider";
 import ErrorBoundary from "@/components/ui/error-boundary";
 import { cn } from "@/lib/utils";
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -34,6 +35,7 @@ export default function RootLayout({
               {children}
             </AuthProvider>
           </ErrorBoundary>
+          <Toaster position="top-right" richColors />
         </QueryProvider>
       </body>
     </html>

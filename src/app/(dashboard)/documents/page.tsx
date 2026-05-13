@@ -63,7 +63,7 @@ export default function DocumentsPage() {
   const deleteDocumentMutation = useDeleteDocument();
 
   const filtered = documents.filter((d) =>
-    d.name.toLowerCase().includes(searchTerm.toLowerCase())
+    (d.name ?? '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const signedCount = documents.filter((d) => d.status === 'signed').length;

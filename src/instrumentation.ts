@@ -3,12 +3,11 @@ export async function register() {
     const { NodeSDK } = await import('@opentelemetry/sdk-node');
     const { getNodeAutoInstrumentations } = await import('@opentelemetry/auto-instrumentations-node');
     const { OTLPTraceExporter } = await import('@opentelemetry/exporter-trace-otlp-http');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { default: resourcesDefault } = await import('@opentelemetry/resources') as any;
+    const { resourceFromAttributes } = await import('@opentelemetry/resources');
     const { SEMRESATTRS_SERVICE_NAME } = await import('@opentelemetry/semantic-conventions');
 
     const sdk = new NodeSDK({
-      resource: new resourcesDefault.Resource({
+      resource: resourceFromAttributes({
         [SEMRESATTRS_SERVICE_NAME]: 'hr-system',
       }),
       traceExporter: new OTLPTraceExporter({

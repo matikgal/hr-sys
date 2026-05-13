@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Bell, Search, Settings, User, LogOut, Sun, Moon, MessageSquare } from 'lucide-react';
+import { GlobalSearch } from '@/components/features/global-search';
 import { useAuth } from '@/context/auth-context';
 import { useTheme } from '@/lib/use-theme';
 import {
@@ -39,6 +40,18 @@ export function Header() {
   const { user, signOut } = useAuth();
   const { theme, toggle } = useTheme();
   const pathname = usePathname();
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setSearchOpen(open => !open);
+      }
+    };
+    document.addEventListener('keydown', down);
+    return () => document.removeEventListener('keydown', down);
+  }, []);
 
   const pageName = Object.entries(PAGE_NAMES).find(([key]) => pathname.startsWith(key))?.[1] ?? 'HR Manager';
 
@@ -56,6 +69,7 @@ export function Header() {
 
   return (
     <header className="flex items-center justify-between px-8 pt-5 pb-2 bg-transparent shrink-0">
+      <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
       {/* Breadcrumb */}
       <p className="text-[12px] text-muted-foreground tracking-[0.2px]">
         HR Manager · <b className="text-foreground font-semibold font-sans">{pageName}</b> · Przegląd
@@ -63,11 +77,14 @@ export function Header() {
 
       <div className="flex items-center gap-2">
         {/* Search */}
-        <div className="flex items-center gap-2 bg-card border border-border rounded-[10px] px-3 py-[7px] text-[13px] text-muted-foreground min-w-[220px] cursor-text hover:border-border/80 transition-colors">
+        <button
+          onClick={() => setSearchOpen(true)}
+          className="flex items-center gap-2 bg-card border border-border rounded-[10px] px-3 py-[7px] text-[13px] text-muted-foreground min-w-[220px] cursor-pointer hover:border-primary/30 hover:bg-accent/30 transition-colors"
+        >
           <Search size={13} strokeWidth={1.8} className="shrink-0" />
           <span>Szukaj pracowników, raportów…</span>
           <kbd className="ml-auto text-[10px] bg-background border border-border rounded px-1 py-0.5 font-mono leading-none">⌘K</kbd>
-        </div>
+        </button>
 
         {/* Dark mode toggle */}
         <button

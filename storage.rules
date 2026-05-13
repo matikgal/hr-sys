@@ -1,0 +1,56 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    // ── Avatars ───────────────────────────────────────────────────────────────
+    // Any authenticated user can upload their own avatar.
+    // Anyone authenticated can read (avatars shown in UI).
+    // Max 5 MB, images only.
+
+    match /avatars/{employeeId}/{filename} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated()
+        && request.resource.size <= 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // ── HR Documents ──────────────────────────────────────────────────────────
+    // Upload: authenticated users into their own uid subfolder.
+    // Read: uploader (uid match) or users with hr/admin role token claim.
+    // Max 50 MB, allowed types: PDF, Word, Excel, images.
+    // Delete: uploader or HR.
+
+    match /documents/{uid}/{filename} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == uid ||
+        request.auth.token.role == 'admin' ||
+        request.auth.token.role == 'hr'
+      );
+
+      allow create: if isAuthenticated()
+        && request.auth.uid == uid
+        && request.resource.size <= 50 * 1024 * 1024
+        && request.resource.contentType.matches(
+             'application/pdf|application/msword|'
+             + 'application/vnd\\.openxmlformats-officedocument\\..*|'
+             + 'application/vnd\\.ms-excel|'
+             + 'image/.*'
+           );
+
+      allow delete: if isAuthenticated() && (
+        request.auth.uid == uid ||
+        request.auth.token.role == 'admin' ||
+        request.auth.token.role == 'hr'
+      );
+    }
+  }
+}

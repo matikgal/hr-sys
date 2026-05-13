@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
-  User, Bell, Shield, LogOut, CheckCircle2,
+  User, Bell, Shield, LogOut, CheckCircle2, ScrollText, Briefcase, Trash2, Plus,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/context/auth-context';
 import { getUserSettings, saveUserSettings } from '@/services/db/settings';
 import type { UserSettings } from '@/types';
+import { useAuditLog } from '@/hooks/use-audit';
+import { usePositions, useAddPosition, useDeletePosition } from '@/hooks/use-positions';
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
 
 const profileSchema = z.object({
   displayName: z.string().min(2, 'Minimum 2 znaki'),
@@ -31,7 +35,7 @@ const notifSchema = z.object({
 type ProfileForm = z.infer<typeof profileSchema>;
 type NotifForm = z.infer<typeof notifSchema>;
 
-type Section = 'profile' | 'notifications' | 'security';
+type Section = 'profile' | 'notifications' | 'security' | 'audit' | 'positions';
 
 export default function SettingsPage() {
   const { user, signOut } = useAuth();
@@ -82,10 +86,19 @@ export default function SettingsPage() {
     setTimeout(() => setSavedNotif(false), 2500);
   };
 
+  const { data: auditLogs = [], isLoading: auditLoading } = useAuditLog({ limit: 50 });
+  const { data: positions = [], isLoading: posLoading } = usePositions();
+  const addPositionMutation = useAddPosition();
+  const deletePositionMutation = useDeletePosition();
+  const [newPositionName, setNewPositionName] = useState('');
+  const [newPositionLevel, setNewPositionLevel] = useState<'junior'|'mid'|'senior'|'lead'|'manager'|'director'>('mid');
+
   const navItems: { id: Section; label: string; Icon: React.ElementType }[] = [
     { id: 'profile', label: 'Profil', Icon: User },
     { id: 'notifications', label: 'Powiadomienia', Icon: Bell },
     { id: 'security', label: 'Bezpieczeństwo', Icon: Shield },
+    { id: 'positions', label: 'Stanowiska', Icon: Briefcase },
+    { id: 'audit', label: 'Dziennik zdarzeń', Icon: ScrollText },
   ];
 
   return (
@@ -274,6 +287,103 @@ export default function SettingsPage() {
                 >
                   Wyloguj się ze wszystkich sesji
                 </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Positions section */}
+          {section === 'positions' && (
+            <Card className="shadow-none border-border">
+              <CardHeader>
+                <CardTitle className="text-lg">Stanowiska</CardTitle>
+                <CardDescription>Zarządzaj katalogiem stanowisk w organizacji.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Nazwa stanowiska"
+                    value={newPositionName}
+                    onChange={e => setNewPositionName(e.target.value)}
+                    className="h-9"
+                  />
+                  <select
+                    value={newPositionLevel}
+                    onChange={e => setNewPositionLevel(e.target.value as typeof newPositionLevel)}
+                    className="h-9 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {['junior','mid','senior','lead','manager','director'].map(l => (
+                      <option key={l} value={l}>{l}</option>
+                    ))}
+                  </select>
+                  <Button
+                    size="sm"
+                    className="h-9 shrink-0"
+                    disabled={!newPositionName.trim() || addPositionMutation.isPending}
+                    onClick={() => {
+                      if (!newPositionName.trim()) return;
+                      addPositionMutation.mutate({ name: newPositionName.trim(), level: newPositionLevel });
+                      setNewPositionName('');
+                    }}
+                  >
+                    <Plus size={14} className="mr-1" /> Dodaj
+                  </Button>
+                </div>
+                <div className="divide-y divide-border border border-border rounded-lg overflow-hidden">
+                  {posLoading ? (
+                    <div className="p-4 text-sm text-muted-foreground">Ładowanie…</div>
+                  ) : positions.length === 0 ? (
+                    <div className="p-4 text-sm text-muted-foreground">Brak stanowisk.</div>
+                  ) : positions.map(pos => (
+                    <div key={pos.id} className="flex items-center justify-between px-4 py-2.5 hover:bg-muted/30">
+                      <div>
+                        <span className="text-[13px] font-medium">{pos.name}</span>
+                        {pos.level && <span className="ml-2 text-[10px] text-muted-foreground uppercase font-bold">{pos.level}</span>}
+                      </div>
+                      <button
+                        onClick={() => deletePositionMutation.mutate(pos.id)}
+                        className="text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Audit log section */}
+          {section === 'audit' && (
+            <Card className="shadow-none border-border">
+              <CardHeader>
+                <CardTitle className="text-lg">Dziennik zdarzeń</CardTitle>
+                <CardDescription>Historia akcji wykonanych w systemie (ostatnie 50).</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                {auditLoading ? (
+                  <div className="p-6 space-y-3">
+                    {[1,2,3,4,5].map(i => <div key={i} className="h-10 bg-muted rounded animate-pulse" />)}
+                  </div>
+                ) : auditLogs.length === 0 ? (
+                  <div className="py-16 text-center text-sm text-muted-foreground">Brak zdarzeń.</div>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {auditLogs.map(log => (
+                      <div key={log.id} className="px-6 py-3 flex items-start justify-between gap-4 hover:bg-muted/30">
+                        <div className="space-y-0.5 min-w-0">
+                          <p className="text-[13px] font-medium text-foreground">{log.action.replace(/_/g, ' ')}</p>
+                          <p className="text-[11px] text-muted-foreground truncate">
+                            {log.actorName} · {log.module}
+                            {log.targetName ? ` · ${log.targetName}` : ''}
+                          </p>
+                        </div>
+                        <span className="text-[11px] text-muted-foreground shrink-0 mt-0.5">
+                          {format(new Date(log.createdAt), 'd MMM yyyy, HH:mm', { locale: pl })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

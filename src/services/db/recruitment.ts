@@ -14,6 +14,7 @@ import {
 } from "firebase/firestore";
 import { Candidate, Job, Employee } from "@/types";
 import { autoAssignOnboardingTrainings } from "./trainings";
+import { logAudit } from "./audit";
 
 const JOBS_COLLECTION = "jobs";
 const CANDIDATES_COLLECTION = "candidates";
@@ -111,6 +112,17 @@ export const hireCandidate = async (candidateId: string, jobId: string): Promise
   } catch (err) {
     console.error("Failed to auto-assign trainings:", err);
   }
+
+  // 5. Audit log
+  await logAudit({
+    action: 'hire_candidate',
+    module: 'recruitment',
+    actorId: 'system',
+    actorName: 'System',
+    targetId: employeeId,
+    targetName: candidateId,
+    after: { candidateId, jobId, employeeId },
+  });
 
   return employeeId;
 };

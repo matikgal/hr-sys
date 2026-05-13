@@ -28,14 +28,20 @@ export default function LoginPage() {
     }
   };
 
-  const quickLogin = async (role: 'admin' | 'user') => {
+  const QUICK_ACCOUNTS = [
+    { label: 'Admin', email: 'admin@hr.local', color: 'text-violet-600' },
+    { label: 'HR', email: 'hr@hr.local', color: 'text-blue-600' },
+    { label: 'Manager', email: 'manager@hr.local', color: 'text-amber-600' },
+    { label: 'Pracownik', email: 'user@hr.local', color: 'text-emerald-600' },
+  ] as const;
+
+  const quickLogin = async (email: string) => {
     setLoading(true);
     setError("");
-    const quickEmail = role === 'admin' ? "admin@hr.local" : "user@hr.local";
     try {
-      await signInWithEmailAndPassword(auth, quickEmail, "haslo123");
+      await signInWithEmailAndPassword(auth, email, "haslo123");
       router.push("/dashboard");
-    } catch (err: any) {
+    } catch {
       setError("Błąd szybkiego logowania. Upewnij się, że baza została zainicjowana.");
     } finally {
       setLoading(false);
@@ -137,21 +143,18 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
-              <button
-                onClick={() => quickLogin('admin')}
-                disabled={loading}
-                className="h-9 bg-muted border border-border rounded-lg text-[12px] font-medium text-foreground/80 hover:bg-accent transition-colors disabled:opacity-50"
-              >
-                Admin
-              </button>
-              <button
-                onClick={() => quickLogin('user')}
-                disabled={loading}
-                className="h-9 bg-muted border border-border rounded-lg text-[12px] font-medium text-foreground/80 hover:bg-accent transition-colors disabled:opacity-50"
-              >
-                Pracownik
-              </button>
+            <div className="grid grid-cols-2 gap-2">
+              {QUICK_ACCOUNTS.map(({ label, email, color }) => (
+                <button
+                  key={email}
+                  onClick={() => quickLogin(email)}
+                  disabled={loading}
+                  className="h-9 bg-muted border border-border rounded-lg text-[12px] font-medium hover:bg-accent transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                >
+                  <span className={`size-1.5 rounded-full bg-current ${color}`} />
+                  <span className={color}>{label}</span>
+                </button>
+              ))}
             </div>
           </div>
 

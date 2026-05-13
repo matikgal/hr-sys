@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import {
   Users, Briefcase, Plus, Search, MoreVertical, UserCheck, Columns2,
 } from 'lucide-react';
@@ -39,6 +41,7 @@ const STAGES: { id: Candidate['stage']; label: string; accent: string }[] = [
 ];
 
 export default function RecruitmentPage() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
@@ -90,7 +93,13 @@ export default function RecruitmentPage() {
 
   const handleHire = (candidateId: string, jobId: string) => {
     if (!confirm('Czy na pewno chcesz zatrudnić tego kandydata? Spowoduje to utworzenie nowego rekordu pracownika.')) return;
-    hireMutation.mutate({ candidateId, jobId });
+    hireMutation.mutate({ candidateId, jobId }, {
+      onSuccess: (employeeId) => {
+        toast.success('Kandydat zatrudniony!', { description: 'Profil pracownika został utworzony.' });
+        router.push(`/employees/${employeeId}`);
+      },
+      onError: () => toast.error('Błąd podczas zatrudniania kandydata.'),
+    });
   };
 
   const getDepartmentName = (id: string) => departments.find(d => d.id === id)?.name || id;
@@ -390,8 +399,15 @@ export default function RecruitmentPage() {
                   <button
                     onClick={() => {
                       if (!confirm('Zatrudnić tego kandydata?')) return;
-                      hireMutation.mutate({ candidateId: selectedCandidate.id, jobId: selectedCandidate.jobId });
+                      const { id, jobId } = selectedCandidate;
                       setSelectedCandidate(null);
+                      hireMutation.mutate({ candidateId: id, jobId }, {
+                        onSuccess: (employeeId) => {
+                          toast.success('Kandydat zatrudniony!', { description: 'Profil pracownika został utworzony.' });
+                          router.push(`/employees/${employeeId}`);
+                        },
+                        onError: () => toast.error('Błąd podczas zatrudniania kandydata.'),
+                      });
                     }}
                     disabled={hireMutation.isPending}
                     className="w-full h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[13px] font-semibold flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"

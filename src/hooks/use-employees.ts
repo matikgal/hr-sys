@@ -1,5 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getAllEmployees, addEmployee, getEmployeeByAuthId } from '@/services/db/employees';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getAllEmployees, addEmployee, getEmployeeByAuthId, getEmployeesPaginated } from '@/services/db/employees';
+import type { DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
 import { getDepartments } from '@/services/db/system';
 import { queryKeys } from '@/lib/query-keys';
 import type { Employee } from '@/types';
@@ -24,6 +25,16 @@ export function useEmployeeByAuthId(uid: string | undefined) {
     queryKey: queryKeys.employees.detail(uid ?? ''),
     queryFn: () => getEmployeeByAuthId(uid!),
     enabled: !!uid,
+  });
+}
+
+export function useEmployeesPaginated(filters?: { status?: Employee['status']; departmentId?: string }) {
+  return useInfiniteQuery({
+    queryKey: [...queryKeys.employees.all, 'paginated', filters],
+    queryFn: ({ pageParam }) =>
+      getEmployeesPaginated(pageParam as QueryDocumentSnapshot<DocumentData> | undefined, filters),
+    initialPageParam: undefined as QueryDocumentSnapshot<DocumentData> | undefined,
+    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.lastDoc ?? undefined : undefined,
   });
 }
 
