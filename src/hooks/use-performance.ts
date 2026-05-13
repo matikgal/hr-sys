@@ -1,12 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getAllReviews, submitReview } from '@/services/db/performance';
+import { getAllReviews, getEmployeeReviews, submitReview } from '@/services/db/performance';
 import { queryKeys } from '@/lib/query-keys';
 import type { Review } from '@/types';
 
-export function useReviews() {
+// email=null  → getAllReviews (manager+)
+// email=string → getEmployeeReviews by revieweeEmail (employee)
+export function useReviews(email: string | null) {
   return useQuery({
-    queryKey: queryKeys.performance.all,
-    queryFn: getAllReviews,
+    queryKey: email ? ['reviews', 'employee', email] : queryKeys.performance.all,
+    queryFn: email ? () => getEmployeeReviews(email) : getAllReviews,
   });
 }
 

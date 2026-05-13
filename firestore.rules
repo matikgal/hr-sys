@@ -13,26 +13,32 @@ service cloud.firestore {
       return request.auth.uid;
     }
 
-    // Fetch the calling user's employee record to check role/department.
-    // Roles are stored in employees.metadata.role (admin | hr | manager | employee).
-    function getEmployee() {
-      return get(/databases/$(database)/documents/employees/$(uid())).data;
-    }
-
+    // Roles stored in employees/{uid}.metadata.role
+    // Falls back to 'admin' for admin@hr.local so the app works before seed
     function role() {
-      return getEmployee().metadata.role;
+      let snap = get(/databases/$(database)/documents/employees/$(uid()));
+      let r = snap != null && snap.data != null
+        ? snap.data.get('metadata', {}).get('role', null)
+        : null;
+      return r != null ? r
+        : (request.auth.token.email == 'admin@hr.local' ? 'admin' : 'employee');
     }
 
     function isAdmin() {
-      return isAuthenticated() && role() == 'admin';
+      return isAuthenticated() && (role() == 'admin' || request.auth.token.email == 'admin@hr.local');
+    }
+
+    // Admin bypass — full access to everything
+    match /{document=**} {
+      allow read, write: if request.auth != null && request.auth.token.email == 'admin@hr.local';
     }
 
     function isHR() {
-      return isAuthenticated() && (role() == 'admin' || role() == 'hr');
+      return isAdmin() || (isAuthenticated() && role() == 'hr');
     }
 
     function isManager() {
-      return isAuthenticated() && (role() == 'admin' || role() == 'hr' || role() == 'manager');
+      return isHR() || (isAuthenticated() && role() == 'manager');
     }
 
     // ── employees ─────────────────────────────────────────────────────────────
@@ -41,10 +47,7 @@ service cloud.firestore {
     // Employee: read own record only (public profile), no write
 
     match /employees/{employeeId} {
-      allow read: if isAuthenticated() && (
-        isManager() ||                     // managers see all
-        resource.data.authId == uid()      // own record
-      );
+      allow read: if isAuthenticated();
       allow create, delete: if isHR();
       allow update: if isHR() || (
         // Manager can update non-sensitive fields of their team
@@ -86,9 +89,22 @@ service cloud.firestore {
     // HR: full access
 
     match /leaves/{leaveId} {
-      allow read: if isManager() || resource.data.employeeId == uid();
-      allow create: if isAuthenticated() &&
-        request.resource.data.employeeId == uid();
+      // Employee can read their own leaves — employeeId is the Firestore doc ID of the employee,
+      // so we check both: direct uid match (if doc ID == auth uid) and via employees collection lookup
+      allow read: if isManager() || (
+        isAuthenticated() && (
+          resource.data.employeeId == uid() ||
+          exists(/databases/$(database)/documents/employees/$(resource.data.employeeId)) &&
+          get(/databases/$(database)/documents/employees/$(resource.data.employeeId)).data.get('authId', '') == uid()
+        )
+      );
+      allow create: if isAuthenticated() && (
+        request.resource.data.employeeId == uid() ||
+        (
+          exists(/databases/$(database)/documents/employees/$(request.resource.data.employeeId)) &&
+          get(/databases/$(database)/documents/employees/$(request.resource.data.employeeId)).data.get('authId', '') == uid()
+        )
+      );
       allow update: if isHR() || (
         isManager() &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'approverId'])
@@ -97,8 +113,16 @@ service cloud.firestore {
     }
 
     match /leave_balances/{employeeId} {
-      allow read: if isManager() || employeeId == uid();
-      allow write: if isHR();
+      allow read: if isManager() || employeeId == uid() || (
+        exists(/databases/$(database)/documents/employees/$(employeeId)) &&
+        get(/databases/$(database)/documents/employees/$(employeeId)).data.get('authId', '') == uid()
+      );
+      allow create: if isManager() || employeeId == uid() || (
+        exists(/databases/$(database)/documents/employees/$(employeeId)) &&
+        get(/databases/$(database)/documents/employees/$(employeeId)).data.get('authId', '') == uid()
+      );
+      allow update: if isManager();
+      allow delete: if isManager();
     }
 
     // ── recruitment ───────────────────────────────────────────────────────────
@@ -109,8 +133,9 @@ service cloud.firestore {
     }
 
     match /candidates/{candidateId} {
-      allow read: if isManager();
-      allow write: if isHR();
+      allow read: if isManager() || resource.data.email == request.auth.token.email;
+      allow create: if isAuthenticated();
+      allow update, delete: if isHR();
     }
 
     // ── performance ───────────────────────────────────────────────────────────
@@ -122,7 +147,8 @@ service cloud.firestore {
       allow read: if isHR() || (
         isManager() && resource.data.status == 'submitted'
       ) || (
-        resource.data.employeeId == uid() && resource.data.status == 'submitted'
+        resource.data.status == 'submitted' &&
+        resource.data.revieweeEmail == request.auth.token.email
       );
       allow create: if isManager();
       allow update: if isHR() || resource.data.reviewerId == uid();
@@ -133,12 +159,13 @@ service cloud.firestore {
 
     match /trainings/{trainingId} {
       allow read: if isAuthenticated();
-      allow write: if isHR();
+      allow write: if isManager();
     }
 
     match /employee_trainings/{recordId} {
       allow read: if isManager() || resource.data.employeeId == uid();
-      allow write: if isHR();
+      allow create: if isAuthenticated() && request.resource.data.employeeId == uid();
+      allow update, delete: if isManager();
     }
 
     // ── benefits ─────────────────────────────────────────────────────────────
@@ -177,6 +204,50 @@ service cloud.firestore {
       allow read: if isManager();
       // Only Cloud Functions should write — deny all client writes
       allow write: if false;
+    }
+
+    // ── positions ────────────────────────────────────────────────────────────
+
+    match /positions/{positionId} {
+      allow read: if isAuthenticated();
+      allow write: if isHR();
+    }
+
+    // ── tasks ─────────────────────────────────────────────────────────────────
+
+    match /tasks/{taskId} {
+      allow read: if isManager() || resource.data.assigneeEmail == request.auth.token.email;
+      allow create: if isManager();
+      allow update: if isManager() || (
+        isAuthenticated() &&
+        resource.data.assigneeEmail == request.auth.token.email &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+      );
+      allow delete: if isManager();
+    }
+
+    // ── audit_log ─────────────────────────────────────────────────────────────
+
+    match /audit_log/{logId} {
+      allow read: if isHR();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
+    // ── chat ─────────────────────────────────────────────────────────────────
+
+    match /conversations/{conversationId} {
+      allow read: if isAuthenticated() && uid() in resource.data.participants;
+      allow create: if isAuthenticated() && uid() in request.resource.data.participants;
+      allow update: if isAuthenticated() && uid() in resource.data.participants;
+
+      match /messages/{messageId} {
+        allow read: if isAuthenticated() &&
+          uid() in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+        allow create: if isAuthenticated() &&
+          uid() in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants &&
+          request.resource.data.senderId == uid();
+      }
     }
   }
 }

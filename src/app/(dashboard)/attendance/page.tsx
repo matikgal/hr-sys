@@ -32,17 +32,39 @@ import {
 import { Attendance, Employee } from '@/types';
 import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { useEmployeeByAuthId } from '@/hooks/use-employees';
+import { useEmployeeByAuthId, useEmployees } from '@/hooks/use-employees';
 import { useAuth } from '@/context/auth-context';
 import { useTodayAttendance, useAttendanceHistory, useClockIn, useClockOut } from '@/hooks/use-attendance';
+import { useState, useEffect } from 'react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export default function AttendancePage() {
   const { user } = useAuth();
+  const canViewOthers = user?.role === 'admin' || user?.role === 'hr' || user?.role === 'manager';
+
   const { data: currentEmployee, isLoading: empLoading } = useEmployeeByAuthId(user?.uid);
   const empId = currentEmployee?.id;
 
-  const { data: todayRecord, isLoading: todayLoading } = useTodayAttendance(empId);
-  const { data: history = [], isLoading: historyLoading } = useAttendanceHistory(empId);
+  const { data: allEmployees = [] } = useEmployees(canViewOthers ? undefined : { limit: 0 });
+
+  const [viewingEmpId, setViewingEmpId] = useState<string>('');
+  useEffect(() => {
+    if (empId && !viewingEmpId) setViewingEmpId(empId);
+  }, [empId]);
+
+  const isViewingOwn = !viewingEmpId || viewingEmpId === empId;
+  const viewingEmployee = canViewOthers
+    ? allEmployees.find(e => e.id === viewingEmpId) ?? currentEmployee
+    : currentEmployee;
+
+  const { data: todayRecord, isLoading: todayLoading } = useTodayAttendance(viewingEmpId || empId);
+  const { data: history = [], isLoading: historyLoading } = useAttendanceHistory(viewingEmpId || empId);
   const loading = empLoading || todayLoading || historyLoading;
 
   const clockInMutation = useClockIn(empId);
@@ -76,7 +98,20 @@ export default function AttendancePage() {
           <p className="text-sm text-muted-foreground mt-1">Zarządzanie czasem pracy i rejestracja zdarzeń</p>
         </div>
         <div className="flex items-center gap-2">
-          {currentEmployee && (
+          {canViewOthers ? (
+            <Select value={viewingEmpId} onValueChange={setViewingEmpId}>
+              <SelectTrigger className="h-9 w-[220px] rounded-[10px] border-border bg-card text-[13px]">
+                <SelectValue placeholder="Wybierz pracownika…" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-border">
+                {allEmployees.map(e => (
+                  <SelectItem key={e.id} value={e.id} className="text-[13px]">
+                    {e.firstName} {e.lastName}{e.id === empId ? ' (ja)' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : currentEmployee && (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-muted border border-border rounded-md">
               <span className="size-2 bg-emerald-500 rounded-full animate-pulse"></span>
               <span className="text-xs font-bold text-foreground/80 uppercase tracking-tight">
@@ -136,15 +171,21 @@ export default function AttendancePage() {
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em]">
                   {new Date().toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' })}
                 </p>
+                {!isViewingOwn && viewingEmployee && (
+                  <p className="text-sm font-semibold text-primary mt-1">
+                    Podgląd: {viewingEmployee.firstName} {viewingEmployee.lastName}
+                  </p>
+                )}
               </div>
 
+              {isViewingOwn && (
               <div className="flex flex-wrap items-center justify-center gap-4">
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   className={cn(
                     "h-12 px-8 rounded-md font-bold transition-all shadow-sm",
-                    isWorking 
-                      ? "bg-muted text-muted-foreground cursor-not-allowed border-border" 
+                    isWorking
+                      ? "bg-muted text-muted-foreground cursor-not-allowed border-border"
                       : "bg-primary text-primary-foreground hover:bg-primary/90"
                   )}
                   onClick={handleClockIn}
@@ -152,13 +193,13 @@ export default function AttendancePage() {
                 >
                   <Play size={18} className="mr-2 fill-current" /> Rozpocznij pracę
                 </Button>
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   variant="outline"
                   className={cn(
                     "h-12 px-8 rounded-md font-bold transition-all shadow-sm border-border",
-                    !isWorking 
-                      ? "text-muted-foreground/50 border-border/50" 
+                    !isWorking
+                      ? "text-muted-foreground/50 border-border/50"
                       : "text-red-600 hover:bg-red-50 hover:border-red-200 hover:text-red-700"
                   )}
                   onClick={handleClockOut}
@@ -167,6 +208,7 @@ export default function AttendancePage() {
                   <Square size={18} className="mr-2 fill-current" /> Zakończ pracę
                 </Button>
               </div>
+              )}
 
               {todayRecord && todayRecord.events.length > 0 && (
                 <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground bg-muted px-3 py-1.5 rounded-full border border-border/50">

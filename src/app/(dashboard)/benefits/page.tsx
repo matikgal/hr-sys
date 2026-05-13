@@ -15,30 +15,55 @@ import {
   Check,
   CreditCard,
   ExternalLink,
-  ArrowRight
+  ArrowRight,
+  Trash2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Benefit } from '@/types';
 import { useAuth } from '@/context/auth-context';
 import { cn } from '@/lib/utils';
-import { useBenefitsCatalog, useEmployeeBenefits, useEnrollBenefit, useUnenrollBenefit } from '@/hooks/use-benefits';
-
-const EMPLOYEE_ID = 'EMP-001';
+import { 
+  useBenefitsCatalog, 
+  useEmployeeBenefits, 
+  useEnrollBenefit, 
+  useUnenrollBenefit,
+  useCreateBenefit,
+  useDeleteBenefit
+} from '@/hooks/use-benefits';
 
 export default function BenefitsPage() {
   const { user } = useAuth();
+  const canManage = user?.role === 'admin' || user?.role === 'hr' || user?.role === 'manager';
+  
   const [error, setError] = useState<string | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newProvider, setNewProvider] = useState('');
+  const [newCost, setNewCost] = useState('100');
 
   const { data: benefits = [], isLoading: benefitsLoading } = useBenefitsCatalog();
-  const { data: enrolledIds = [], isLoading: enrolledLoading } = useEmployeeBenefits(EMPLOYEE_ID);
+  const { data: enrolledIds = [], isLoading: enrolledLoading } = useEmployeeBenefits(user?.uid);
   const loading = benefitsLoading || enrolledLoading;
 
-  const enrollMutation = useEnrollBenefit(EMPLOYEE_ID);
-  const unenrollMutation = useUnenrollBenefit(EMPLOYEE_ID);
+  const enrollMutation = useEnrollBenefit(user?.uid ?? '');
+  const unenrollMutation = useUnenrollBenefit(user?.uid ?? '');
+  const createMutation = useCreateBenefit();
+  const deleteMutation = useDeleteBenefit();
+  
   const isSubmitting = enrollMutation.isPending || unenrollMutation.isPending
     ? (enrollMutation.variables ?? unenrollMutation.variables ?? null)
     : null;
@@ -46,6 +71,7 @@ export default function BenefitsPage() {
   const budgetLimit = 500;
 
   const handleEnroll = (benefitId: string) => {
+    if (!user?.uid) return;
     enrollMutation.mutate(benefitId, {
       onError: (err: any) => {
         setError(err.message);
@@ -55,7 +81,28 @@ export default function BenefitsPage() {
   };
 
   const handleUnenroll = (benefitId: string) => {
+    if (!user?.uid) return;
     unenrollMutation.mutate(benefitId);
+  };
+
+  const handleCreate = () => {
+    if (!newName.trim() || !newProvider.trim() || !newCost) return;
+    createMutation.mutate({
+      name: newName.trim(),
+      provider: newProvider.trim(),
+      monthlyCost: parseInt(newCost) || 0
+    }, {
+      onSuccess: () => {
+        setShowAdd(false);
+        setNewName('');
+        setNewProvider('');
+        setNewCost('100');
+      }
+    });
+  };
+
+  const handleDelete = (benefitId: string) => {
+    deleteMutation.mutate(benefitId);
   };
 
   const currentSpend = benefits
@@ -81,6 +128,11 @@ export default function BenefitsPage() {
           <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mt-2">Manage your allowances and perks.</p>
         </div>
         <div className="flex items-center gap-4">
+          {canManage && (
+            <Button size="sm" className="h-10" onClick={() => setShowAdd(true)}>
+              <Plus className="mr-2" size={16} /> Dodaj benefit
+            </Button>
+          )}
           <Button variant="outline" size="sm" className="h-10">
             <CreditCard className="mr-2" /> My Cards
           </Button>
@@ -121,6 +173,10 @@ export default function BenefitsPage() {
             <div className="border-t border-border/50">
               {loading ? (
                 [1, 2, 3].map(i => <div key={i} className="py-6 border-b border-border/50"><Skeleton className="h-12 w-full" /></div>)
+              ) : benefits.length === 0 ? (
+                <div className="py-12 text-center text-sm text-muted-foreground">
+                  Brak dostępnych benefitów w katalogu.
+                </div>
               ) : (
                 benefits.map((benefit) => {
                   const isEnrolled = enrolledIds.includes(benefit.id);
@@ -175,6 +231,18 @@ export default function BenefitsPage() {
                             {isSubmitting === benefit.id ? "..." : <><Plus className="mr-1.5" /> ADD PERK</>}
                           </Button>
                         )}
+                        {canManage && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => handleDelete(benefit.id)}
+                            disabled={deleteMutation.isPending}
+                            title="Usuń benefit"
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   );
@@ -203,6 +271,54 @@ export default function BenefitsPage() {
           )}
         </div>
       </div>
+
+      <Dialog open={showAdd} onOpenChange={setShowAdd}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nowy benefit</DialogTitle>
+            <DialogDescription>Dodaj nowy benefit do katalogu w platformie Cafeteria.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="benefit-name">Nazwa benefitu</Label>
+              <Input
+                id="benefit-name"
+                placeholder="np. Karta Multisport Plus"
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="benefit-provider">Dostawca</Label>
+              <Input
+                id="benefit-provider"
+                placeholder="np. Benefit Systems"
+                value={newProvider}
+                onChange={e => setNewProvider(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="benefit-cost">Koszt miesięczny (PLN)</Label>
+              <Input
+                id="benefit-cost"
+                type="number"
+                min="0"
+                placeholder="100"
+                value={newCost}
+                onChange={e => setNewCost(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAdd(false)}>
+              Anuluj
+            </Button>
+            <Button onClick={handleCreate} disabled={!newName.trim() || !newProvider.trim() || createMutation.isPending}>
+              {createMutation.isPending ? 'Dodawanie...' : 'Dodaj benefit'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

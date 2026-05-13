@@ -51,11 +51,18 @@ async function getOrCreateAuthUid(email: string, password: string): Promise<stri
 
 // ─── seed ──────────────────────────────────────────────────────────────────
 async function runSeed(log: (msg: string) => void) {
+  // Log current auth state
+  const currentUser = auth.currentUser;
+  log(`Aktualny użytkownik: ${currentUser?.email ?? 'niezalogowany'} (uid: ${currentUser?.uid?.slice(0,8) ?? '–'}…)`);
+
   const COLS = ['departments','employees','leaves','leave_balances','attendance',
                 'benefits','employee_benefits','trainings','employee_trainings',
                 'reviews','jobs','candidates'];
   log('Czyszczenie kolekcji…');
-  for (const c of COLS) { await clearCollection(c); log(`  ✓ ${c}`); }
+  for (const c of COLS) {
+    try { await clearCollection(c); log(`  ✓ ${c}`); }
+    catch (e: any) { log(`  ⚠ ${c} — ${e.message}`); }
+  }
 
   // 0. DEMO AUTH ACCOUNTS
   log('Tworzenie kont demo (Auth + Firestore)…');
@@ -63,6 +70,8 @@ async function runSeed(log: (msg: string) => void) {
   for (const acc of DEMO_ACCOUNTS) {
     const uid = await getOrCreateAuthUid(acc.email, acc.password);
     demoUids[acc.email] = uid;
+    // Always write Firestore records as admin to avoid permission issues
+    await signInWithEmailAndPassword(auth, 'admin@hr.local', 'haslo123');
     await setDoc(doc(db, 'employees', uid), {
       firstName: acc.fn, lastName: acc.ln,
       email: acc.email, authId: uid,
@@ -72,8 +81,6 @@ async function runSeed(log: (msg: string) => void) {
     });
     log(`  ✓ ${acc.role} — ${acc.email} (uid: ${uid.slice(0,8)}…)`);
   }
-  // sign back in as admin so rest of seed runs under admin session
-  await signInWithEmailAndPassword(auth, 'admin@hr.local', 'haslo123');
 
   // 1. DEPARTMENTS
   log('Tworzenie działów…');
@@ -296,6 +303,7 @@ async function runSeed(log: (msg: string) => void) {
       const period = periods[periods.length - 1 - r];
       await addDoc(collection(db,'reviews'), {
         employeeId: empRefs[idx],
+        revieweeEmail: empData[idx].email,
         reviewerId: empRefs[8], // HR reviews everyone
         period,
         date: isoDate(rnd(5,180)),

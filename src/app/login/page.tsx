@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { auth } from "@/lib/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { useRouter } from "next/navigation";
 import { AlertCircle, Lock, Mail, Building2, ArrowRight, Loader2 } from "lucide-react";
 
 export default function LoginPage() {
@@ -11,7 +10,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,11 +17,10 @@ export default function LoginPage() {
     setError("");
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     } catch (err: any) {
       setError("Nieprawidłowy email lub hasło.");
       console.error(err);
-    } finally {
       setLoading(false);
     }
   };
@@ -40,10 +37,9 @@ export default function LoginPage() {
     setError("");
     try {
       await signInWithEmailAndPassword(auth, email, "haslo123");
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     } catch {
       setError("Błąd szybkiego logowania. Upewnij się, że baza została zainicjowana.");
-    } finally {
       setLoading(false);
     }
   };
@@ -161,7 +157,7 @@ export default function LoginPage() {
           <div className="px-7 py-3.5 border-t border-border bg-muted flex items-center justify-between">
             <p className="text-[11px] text-muted-foreground">Problemy? Skontaktuj się z IT</p>
             <button
-              onClick={() => router.push('/admin/seed')}
+              onClick={() => { window.location.href = '/admin/seed'; }}
               className="text-[11px] font-medium text-foreground/70 hover:text-foreground transition-colors"
             >
               Inicjuj bazę →

@@ -61,13 +61,14 @@ export default function LeavesPage() {
   const [error, setError] = useState<string | null>(null);
 
   const { data: currentEmployee } = useEmployeeByAuthId(user?.uid);
-  const empId = currentEmployee?.id ?? 'EMP-001';
+  // Use the Firebase Auth UID as employeeId fallback — Firestore rules check employeeId == uid()
+  const empId = currentEmployee?.id ?? user?.uid ?? '';
 
-  const { data: leaves = [], isLoading: leavesLoading } = useLeaves();
+  const { data: leaves = [], isLoading: leavesLoading } = useLeaves(empId || undefined, user?.role);
   const { data: balance, isLoading: balanceLoading } = useLeaveBalance(empId);
   const loading = leavesLoading || balanceLoading;
 
-  const requestLeaveMutation = useRequestLeave();
+  const requestLeaveMutation = useRequestLeave(empId || undefined);
   const approveMutation = useApproveLeave();
   const rejectMutation = useRejectLeave();
 
@@ -100,6 +101,11 @@ export default function LeavesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!empId) {
+      setError('Nie można zidentyfikować pracownika. Spróbuj ponownie za chwilę.');
+      return;
+    }
 
     try {
       const start = parseISO(formData.startDate);

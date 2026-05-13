@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getActiveJobs, getAllCandidates, createJob,
-  updateCandidateStage, hireCandidate, updateCandidateNotes,
+  updateCandidateStage, hireCandidate, updateCandidateNotes, addCandidate,
+  getCandidatesByEmail,
 } from '@/services/db/recruitment';
 import { getDepartments } from '@/services/db/system';
 import { queryKeys } from '@/lib/query-keys';
@@ -59,6 +60,25 @@ export function useCreateJob() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.recruitment.jobs });
     },
+  });
+}
+
+export function useApplyForJob() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (candidate: Omit<Candidate, 'id'>) => addCandidate(candidate),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.recruitment.candidates() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.recruitment.myApplications(vars.email) });
+    },
+  });
+}
+
+export function useMyApplications(email: string | null | undefined) {
+  return useQuery<Candidate[]>({
+    queryKey: queryKeys.recruitment.myApplications(email),
+    queryFn: () => getCandidatesByEmail(email!),
+    enabled: !!email,
   });
 }
 

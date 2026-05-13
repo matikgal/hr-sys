@@ -7,12 +7,14 @@ import { Sidebar } from "./sidebar";
 import { Header } from "./header";
 import { Skeleton } from "@/components/ui/skeleton";
 import ErrorBoundary from "@/components/ui/error-boundary";
+import { ChatPanel } from "@/components/features/chat/ChatPanel";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user && pathname !== "/login" && !pathname.includes("/admin/seed")) {
@@ -79,13 +81,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
+        <Header onChatOpen={() => setChatOpen(true)} />
         <main className="flex-1 overflow-y-auto no-scrollbar">
           <ErrorBoundary>
             {children}
           </ErrorBoundary>
         </main>
       </div>
+      <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} />
     </div>
   );
 }

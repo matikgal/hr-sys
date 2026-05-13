@@ -23,6 +23,26 @@ service firebase.storage {
         && request.resource.contentType.matches('image/.*');
     }
 
+    // ── CV Files ──────────────────────────────────────────────────────────────
+    // Any authenticated user can upload their own CV.
+    // HR/admin can read all CVs. Uploader can read/delete own.
+    // Max 10 MB, PDF only.
+
+    match /cvs/{filename} {
+      allow read: if isAuthenticated() && (
+        request.auth.token.role == 'admin' ||
+        request.auth.token.role == 'hr' ||
+        request.auth.token.role == 'manager'
+      );
+      allow create: if isAuthenticated()
+        && request.resource.size <= 10 * 1024 * 1024
+        && request.resource.contentType == 'application/pdf';
+      allow delete: if isAuthenticated() && (
+        request.auth.token.role == 'admin' ||
+        request.auth.token.role == 'hr'
+      );
+    }
+
     // ── HR Documents ──────────────────────────────────────────────────────────
     // Upload: authenticated users into their own uid subfolder.
     // Read: uploader (uid match) or users with hr/admin role token claim.

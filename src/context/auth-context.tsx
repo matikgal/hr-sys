@@ -30,13 +30,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         let role: User['role'] = 'employee';
+        let displayName = firebaseUser.displayName;
+        let photoURL = firebaseUser.photoURL;
         try {
           const snap = await getDoc(doc(db, 'employees', firebaseUser.uid));
           if (snap.exists()) {
-            const r = snap.data()?.metadata?.role;
+            const data = snap.data();
+            const r = data?.metadata?.role;
             if (['admin', 'hr', 'manager', 'employee'].includes(r)) role = r;
+            const fullName = [data?.firstName, data?.lastName].filter(Boolean).join(' ');
+            if (fullName) displayName = fullName;
+            if (data?.photoURL) photoURL = data.photoURL;
           } else if (firebaseUser.email === 'admin@hr.local') {
             role = 'admin';
+            if (!displayName) displayName = 'Administrator';
           }
         } catch {
           if (firebaseUser.email === 'admin@hr.local') role = 'admin';
@@ -45,8 +52,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser({
           uid: firebaseUser.uid,
           email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL,
+          displayName,
+          photoURL,
           role,
         });
       } else {

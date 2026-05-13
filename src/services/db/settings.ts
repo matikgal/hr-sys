@@ -9,12 +9,6 @@ const DEFAULT_SETTINGS = (uid: string): UserSettings => ({
   displayName: '',
   theme: 'system',
   language: 'pl',
-  notifications: {
-    email: true,
-    push: true,
-    leaveRequests: true,
-    attendance: false,
-  },
   companyName: 'Nexus Corp',
 });
 

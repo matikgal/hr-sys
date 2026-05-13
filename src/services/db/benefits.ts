@@ -6,6 +6,7 @@ import {
   doc,
   setDoc,
   deleteDoc,
+  addDoc,
   query, 
   where, 
   orderBy,
@@ -21,6 +22,15 @@ export const getAvailableBenefits = async (): Promise<Benefit[]> => {
   const col = collection(db, BENEFITS_COL);
   const snapshot = await getDocs(query(col, orderBy("name")));
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Benefit));
+};
+
+export const createBenefit = async (data: Omit<Benefit, "id">): Promise<string> => {
+  const ref = await addDoc(collection(db, BENEFITS_COL), data);
+  return ref.id;
+};
+
+export const deleteBenefit = async (id: string): Promise<void> => {
+  await deleteDoc(doc(db, BENEFITS_COL, id));
 };
 
 export const getEmployeeBenefits = async (employeeId: string): Promise<string[]> => {

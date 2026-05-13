@@ -50,6 +50,13 @@ import {
 } from "@/components/ui/tabs";
 import Link from 'next/link';
 import { Employee, Department } from '@/types';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useEmployees, useEmployeesPaginated, useDepartments, useAddEmployee } from '@/hooks/use-employees';
 import { cn } from '@/lib/utils';
 import { exportToCsv } from '@/lib/export-csv';
@@ -75,8 +82,17 @@ const EMPTY_FORM = {
   status: 'active' as Employee['status'],
 };
 
+const STATUS_OPTIONS: { value: Employee['status'] | 'all'; label: string }[] = [
+  { value: 'all', label: 'Wszyscy' },
+  { value: 'active', label: 'Aktywni' },
+  { value: 'on-leave', label: 'Na urlopie' },
+  { value: 'inactive', label: 'Nieaktywni' },
+];
+
 export default function EmployeesPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<Employee['status'] | 'all'>('all');
+  const [deptFilter, setDeptFilter] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -114,9 +130,15 @@ export default function EmployeesPage() {
     return departments.find(d => d.id === id)?.name || 'Nieznany';
   };
 
-  const filteredEmployees = employees.filter(emp => 
-    `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredEmployees = employees.filter(emp => {
+    if (searchTerm && !`${emp.firstName} ${emp.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) && !emp.email.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    if (statusFilter !== 'all' && emp.status !== statusFilter) return false;
+    if (deptFilter && emp.departmentId !== deptFilter) return false;
+    return true;
+  });
+
+  const activeFilters = (statusFilter !== 'all' ? 1 : 0) + (deptFilter ? 1 : 0);
+  const clearFilters = () => { setStatusFilter('all'); setDeptFilter(''); setSearchTerm(''); };
 
   const getStatusBadge = (status: Employee['status']) => {
     switch (status) {
@@ -277,19 +299,59 @@ export default function EmployeesPage() {
       </section>
 
       {/* Filters & Search */}
-      <div className="flex flex-col md:flex-row md:items-center gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-          <Input 
-            placeholder="Szukaj po nazwisku..." 
-            className="pl-10 border-border rounded-md h-9 text-sm focus:ring-0 focus:border-foreground"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col md:flex-row md:items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+            <Input
+              placeholder="Szukaj po nazwisku lub e-mailu…"
+              className="pl-10 border-border rounded-md h-9 text-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <Select value={deptFilter || '__all__'} onValueChange={v => setDeptFilter(v === '__all__' ? '' : v)}>
+            <SelectTrigger className="h-9 w-[190px] rounded-[10px] border-border bg-card text-[13px]">
+              <SelectValue placeholder="Wszystkie działy" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-border">
+              <SelectItem value="__all__" className="text-[13px]">Wszystkie działy</SelectItem>
+              {departments.map(d => (
+                <SelectItem key={d.id} value={d.id} className="text-[13px]">{d.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {activeFilters > 0 && (
+            <Button variant="ghost" size="sm" className="h-9 rounded-md text-muted-foreground" onClick={clearFilters}>
+              Wyczyść ({activeFilters})
+            </Button>
+          )}
         </div>
-        <Button variant="outline" size="sm" className="h-9 rounded-md border-border">
-          <Filter size={14} className="mr-2" /> Filtrowanie
-        </Button>
+        {/* Status chips */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {STATUS_OPTIONS.map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => setStatusFilter(opt.value)}
+              className={cn(
+                'px-3 py-1 rounded-full text-[12px] font-medium border transition-colors',
+                statusFilter === opt.value
+                  ? 'bg-foreground text-background border-foreground'
+                  : 'bg-card text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground'
+              )}
+            >
+              {opt.label}
+              {opt.value !== 'all' && (
+                <span className="ml-1.5 opacity-60">
+                  {employees.filter(e => e.status === opt.value).length}
+                </span>
+              )}
+            </button>
+          ))}
+          <span className="text-[12px] text-muted-foreground ml-1">
+            {filteredEmployees.length} wyników
+          </span>
+        </div>
       </div>
 
       {/* Employee Table */}
@@ -343,7 +405,7 @@ export default function EmployeesPage() {
                 </TableCell>
                 <TableCell className="py-3 text-right pr-6" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-2">
-                    <Link href={`/employees/${emp.id}`} onClick={e => e.stopPropagation()}>
+                    <Link href={`/employees/detail?id=${emp.id}`} onClick={e => e.stopPropagation()}>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md">
                         <ArrowRight size={14} />
                       </Button>
@@ -458,7 +520,7 @@ export default function EmployeesPage() {
 
               <div className="pt-6 border-t border-border/50 flex justify-end gap-2">
                 <Button variant="ghost" className="h-9 rounded-md text-sm" onClick={() => setIsSheetOpen(false)}>Zamknij</Button>
-                <Link href={selectedEmployee ? `/employees/${selectedEmployee.id}` : '#'}>
+                <Link href={selectedEmployee ? `/employees/detail?id=${selectedEmployee.id}` : '#'}>
                   <Button className="h-9 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 text-sm">Pełny profil</Button>
                 </Link>
               </div>

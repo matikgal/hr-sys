@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
-  User, Bell, Shield, LogOut, CheckCircle2, ScrollText, Briefcase, Trash2, Plus,
+  User, Shield, LogOut, CheckCircle2, ScrollText, Briefcase, Trash2, Plus,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,17 +25,9 @@ const profileSchema = z.object({
   companyName: z.string().min(2, 'Minimum 2 znaki'),
 });
 
-const notifSchema = z.object({
-  email: z.boolean(),
-  push: z.boolean(),
-  leaveRequests: z.boolean(),
-  attendance: z.boolean(),
-});
-
 type ProfileForm = z.infer<typeof profileSchema>;
-type NotifForm = z.infer<typeof notifSchema>;
 
-type Section = 'profile' | 'notifications' | 'security' | 'audit' | 'positions';
+type Section = 'profile' | 'security' | 'audit' | 'positions';
 
 export default function SettingsPage() {
   const { user, signOut } = useAuth();
@@ -43,17 +35,14 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [savedProfile, setSavedProfile] = useState(false);
-  const [savedNotif, setSavedNotif] = useState(false);
+
 
   const profileForm = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
     defaultValues: { displayName: '', companyName: '' },
   });
 
-  const notifForm = useForm<NotifForm>({
-    resolver: zodResolver(notifSchema),
-    defaultValues: { email: true, push: true, leaveRequests: true, attendance: false },
-  });
+
 
   useEffect(() => {
     if (!user) return;
@@ -63,7 +52,7 @@ export default function SettingsPage() {
         displayName: s.displayName || user.displayName || '',
         companyName: s.companyName,
       });
-      notifForm.reset(s.notifications);
+
       setLoading(false);
     });
   }, [user]);
@@ -77,14 +66,7 @@ export default function SettingsPage() {
     setTimeout(() => setSavedProfile(false), 2500);
   };
 
-  const onSaveNotif = async (data: NotifForm) => {
-    if (!settings || !user) return;
-    const updated = { ...settings, notifications: data };
-    await saveUserSettings(updated);
-    setSettings(updated);
-    setSavedNotif(true);
-    setTimeout(() => setSavedNotif(false), 2500);
-  };
+
 
   const { data: auditLogs = [], isLoading: auditLoading } = useAuditLog({ limit: 50 });
   const { data: positions = [], isLoading: posLoading } = usePositions();
@@ -95,7 +77,7 @@ export default function SettingsPage() {
 
   const navItems: { id: Section; label: string; Icon: React.ElementType }[] = [
     { id: 'profile', label: 'Profil', Icon: User },
-    { id: 'notifications', label: 'Powiadomienia', Icon: Bell },
+
     { id: 'security', label: 'Bezpieczeństwo', Icon: Shield },
     { id: 'positions', label: 'Stanowiska', Icon: Briefcase },
     { id: 'audit', label: 'Dziennik zdarzeń', Icon: ScrollText },
@@ -205,61 +187,7 @@ export default function SettingsPage() {
             </Card>
           )}
 
-          {/* Notifications section */}
-          {section === 'notifications' && (
-            <Card className="shadow-none border-border">
-              <CardHeader>
-                <CardTitle className="text-lg">Powiadomienia</CardTitle>
-                <CardDescription>Wybierz, o czym chcesz być informowany.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="space-y-4">
-                    {Array.from({ length: 4 }).map((_, i) => (
-                      <Skeleton key={i} className="h-6 w-full" />
-                    ))}
-                  </div>
-                ) : (
-                  <form onSubmit={notifForm.handleSubmit(onSaveNotif)} className="space-y-5">
-                    {([
-                      { name: 'email', label: 'Powiadomienia e-mail', desc: 'Otrzymuj podsumowania na skrzynkę.' },
-                      { name: 'push', label: 'Powiadomienia push', desc: 'Alerty w przeglądarce.' },
-                      { name: 'leaveRequests', label: 'Wnioski urlopowe', desc: 'Gdy pracownik złoży wniosek.' },
-                      { name: 'attendance', label: 'Obecność', desc: 'Spóźnienia i anomalie czasu pracy.' },
-                    ] as const).map(({ name, label, desc }) => (
-                      <label key={name} className="flex items-start gap-3 cursor-pointer group">
-                        <input
-                          type="checkbox"
-                          className="mt-0.5 h-4 w-4 rounded border-border accent-primary cursor-pointer"
-                          {...notifForm.register(name)}
-                        />
-                        <div>
-                          <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
-                            {label}
-                          </p>
-                          <p className="text-xs text-muted-foreground">{desc}</p>
-                        </div>
-                      </label>
-                    ))}
-                    <div className="flex items-center gap-3 pt-1">
-                      <Button
-                        size="sm"
-                        type="submit"
-                        disabled={notifForm.formState.isSubmitting}
-                      >
-                        {notifForm.formState.isSubmitting ? 'Zapisywanie...' : 'Zapisz preferencje'}
-                      </Button>
-                      {savedNotif && (
-                        <span className="flex items-center gap-1 text-sm text-emerald-600">
-                          <CheckCircle2 size={14} /> Zapisano
-                        </span>
-                      )}
-                    </div>
-                  </form>
-                )}
-              </CardContent>
-            </Card>
-          )}
+
 
           {/* Security section */}
           {section === 'security' && (

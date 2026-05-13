@@ -19,6 +19,7 @@ import {
   LogOut,
   Database,
   Building2,
+  ListTodo,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/auth-context';
@@ -30,6 +31,7 @@ const navigation = [
   { name: 'Urlopy i nieobecności', href: '/leaves', icon: CalendarDays },
   { name: 'Rekrutacja', href: '/recruitment', icon: UserPlus },
   { name: 'Oceny roczne', href: '/performance', icon: BarChart3 },
+  { name: 'Zadania', href: '/tasks', icon: ListTodo },
   { name: 'Szkolenia', href: '/learning', icon: GraduationCap },
   { name: 'Benefity', href: '/benefits', icon: HeartHandshake },
   { name: 'Dokumenty', href: '/documents', icon: FileText },

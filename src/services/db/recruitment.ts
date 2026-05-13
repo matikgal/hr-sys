@@ -23,9 +23,11 @@ const EMPLOYEES_COLLECTION = "employees";
 // Jobs Service
 export const getActiveJobs = async (): Promise<Job[]> => {
   const col = collection(db, JOBS_COLLECTION);
-  const q = query(col, where("status", "==", "open"), orderBy("title"));
+  const q = query(col, where("status", "==", "open"));
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
+  return snapshot.docs
+    .map(doc => ({ id: doc.id, ...doc.data() } as Job))
+    .sort((a, b) => a.title.localeCompare(b.title));
 };
 
 export const createJob = async (job: Omit<Job, 'id'>): Promise<string> => {
@@ -37,10 +39,13 @@ export const createJob = async (job: Omit<Job, 'id'>): Promise<string> => {
 // Candidates Service
 export const getAllCandidates = async (jobId?: string): Promise<Candidate[]> => {
   const col = collection(db, CANDIDATES_COLLECTION);
-  let q = query(col, orderBy("firstName", "asc"));
-  if (jobId) q = query(q, where("jobId", "==", jobId));
+  const q = jobId
+    ? query(col, where("jobId", "==", jobId))
+    : query(col);
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Candidate));
+  return snapshot.docs
+    .map(doc => ({ id: doc.id, ...doc.data() } as Candidate))
+    .sort((a, b) => a.firstName.localeCompare(b.firstName));
 };
 
 export const updateCandidateStage = async (candidateId: string, stage: Candidate['stage']): Promise<void> => {
@@ -52,6 +57,11 @@ export const addCandidate = async (candidate: Omit<Candidate, 'id'>): Promise<st
   const col = collection(db, CANDIDATES_COLLECTION);
   const docRef = await addDoc(col, candidate);
   return docRef.id;
+};
+
+export const getCandidatesByEmail = async (email: string): Promise<Candidate[]> => {
+  const snap = await getDocs(query(collection(db, CANDIDATES_COLLECTION), where("email", "==", email)));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Candidate));
 };
 
 export const updateCandidateNotes = async (candidateId: string, notes: string): Promise<void> => {

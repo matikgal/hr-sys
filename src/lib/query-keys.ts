@@ -14,11 +14,13 @@ export const queryKeys = {
   },
   leaves: {
     all: ['leaves'] as const,
+    employee: (employeeId: string) => ['leaves', 'employee', employeeId] as const,
     balance: (employeeId: string) => ['leaves', 'balance', employeeId] as const,
   },
   recruitment: {
     jobs: ['recruitment', 'jobs'] as const,
     candidates: (jobId?: string) => ['recruitment', 'candidates', jobId] as const,
+    myApplications: (email: string | null | undefined) => ['recruitment', 'my-applications', email] as const,
   },
   performance: {
     all: ['performance'] as const,

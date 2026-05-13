@@ -1,12 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getAllLeaves, getLeaveBalance, requestLeave, approveLeave, rejectLeave } from '@/services/db/leaves';
+import { getAllLeaves, getEmployeeLeaves, getLeaveBalance, requestLeave, approveLeave, rejectLeave } from '@/services/db/leaves';
 import { queryKeys } from '@/lib/query-keys';
 import type { Leave } from '@/types';
 
-export function useLeaves() {
+export function useLeaves(employeeId?: string, role?: string) {
+  const isPrivileged = role === 'admin' || role === 'hr' || role === 'manager';
   return useQuery({
-    queryKey: queryKeys.leaves.all,
-    queryFn: getAllLeaves,
+    queryKey: isPrivileged ? queryKeys.leaves.all : queryKeys.leaves.employee(employeeId ?? ''),
+    queryFn: isPrivileged ? getAllLeaves : () => getEmployeeLeaves(employeeId!),
+    enabled: isPrivileged ? true : !!employeeId,
   });
 }
 
@@ -18,12 +20,16 @@ export function useLeaveBalance(employeeId: string | undefined) {
   });
 }
 
-export function useRequestLeave() {
+export function useRequestLeave(employeeId?: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: Omit<Leave, 'id' | 'status' | 'approverId'>) => requestLeave(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.leaves.all });
+      if (employeeId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.leaves.employee(employeeId) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.leaves.balance(employeeId) });
+      }
     },
   });
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Star, TrendingUp, Plus, ArrowRight, Target, Trophy } from 'lucide-react';
+import { Star, TrendingUp, Plus, ArrowRight, Target, Trophy, Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,7 @@ import {
 import { Review, Employee } from '@/types';
 import { useReviews, useSubmitReview } from '@/hooks/use-performance';
 import { useEmployees } from '@/hooks/use-employees';
+import { useAuth } from '@/context/auth-context';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle, DialogTrigger,
@@ -74,22 +75,32 @@ const DEFAULT_FORM = {
 };
 
 export default function PerformancePage() {
+  const { user } = useAuth();
+  const canReview = user?.role === 'manager' || user?.role === 'hr' || user?.role === 'admin';
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState(DEFAULT_FORM);
 
-  const { data: reviews = [], isLoading: reviewsLoading } = useReviews();
   const { data: employees = [], isLoading: empLoading } = useEmployees();
+
+  // manager+: null → getAllReviews; employee: email → getEmployeeReviews by revieweeEmail
+  const reviewsEmail = canReview ? null : (user?.email ?? null);
+  const { data: reviews = [], isLoading: reviewsLoading } = useReviews(reviewsEmail);
   const loading = reviewsLoading || empLoading;
 
+  const reviewableEmployees = employees.filter(e => e.email !== user?.email);
+  const employeeMap = useMemo(() => new Map(employees.map(e => [e.id, e])), [employees]);
+
   const submitReviewMutation = useSubmitReview();
-  const isSubmitting = submitReviewMutation.isPending;
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
+    const reviewee = employees.find(e => e.id === formData.employeeId);
     try {
       await submitReviewMutation.mutateAsync({
         ...formData,
-        reviewerId: 'admin-id',
+        revieweeEmail: reviewee?.email ?? '',
+        reviewerId: user?.uid ?? '',
         date: new Date().toISOString().split('T')[0],
       });
       setIsDialogOpen(false);
@@ -100,12 +111,12 @@ export default function PerformancePage() {
   };
 
   const getEmployeeName = (id: string) => {
-    const emp = employees.find(e => e.id === id);
+    const emp = employeeMap.get(id);
     return emp ? `${emp.firstName} ${emp.lastName}` : `ID: ${id}`;
   };
 
   const getEmployeeInitials = (id: string) => {
-    const emp = employees.find(e => e.id === id);
+    const emp = employeeMap.get(id);
     return emp ? `${emp.firstName[0]}${emp.lastName[0]}` : '?';
   };
 
@@ -129,6 +140,17 @@ export default function PerformancePage() {
       .slice(0, 5);
   }, [reviews]);
 
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredReviews = useMemo(() => {
+    if (!searchTerm.trim()) return reviews;
+    const s = searchTerm.toLowerCase();
+    return reviews.filter(r => {
+      const empName = getEmployeeName(r.employeeId).toLowerCase();
+      return empName.includes(s) || r.period.toLowerCase().includes(s);
+    });
+  }, [reviews, searchTerm, employeeMap]);
+
   return (
     <div className="max-w-[1440px] mx-auto space-y-6 px-8 py-10 pb-12">
       {/* Header */}
@@ -137,6 +159,7 @@ export default function PerformancePage() {
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Oceny i Wydajność</h1>
           <p className="text-sm text-muted-foreground mt-1">Zarządzaj cyklami ocen i śledź rozwój pracowników.</p>
         </div>
+        {canReview && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button size="sm" className="h-9"><Plus size={16} className="mr-2" /> Nowa ocena</Button>
@@ -158,7 +181,7 @@ export default function PerformancePage() {
                     onChange={e => setFormData({ ...formData, employeeId: e.target.value })}
                   >
                     <option value="">Wybierz pracownika...</option>
-                    {employees.map(emp => (
+                    {reviewableEmployees.map(emp => (
                       <option key={emp.id} value={emp.id}>{emp.firstName} {emp.lastName}</option>
                     ))}
                   </select>
@@ -203,13 +226,14 @@ export default function PerformancePage() {
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Anuluj</Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Zapisywanie...' : 'Zatwierdź ocenę'}
+                <Button type="submit" disabled={submitReviewMutation.isPending}>
+                  {submitReviewMutation.isPending ? 'Zapisywanie...' : 'Zatwierdź ocenę'}
                 </Button>
               </DialogFooter>
             </form>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       {/* Charts row */}
@@ -281,8 +305,19 @@ export default function PerformancePage() {
 
       {/* Reviews table */}
       <Card className="shadow-none border-border overflow-hidden">
-        <CardHeader className="bg-muted/30 pb-4">
+        <CardHeader className="bg-muted/30 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <CardTitle className="text-base">Historia ocen okresowych</CardTitle>
+          {canReview && (
+            <div className="relative w-full md:w-64">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Szukaj pracownika lub okresu..."
+                className="pl-9 h-9 text-xs bg-background"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          )}
         </CardHeader>
         <Table>
           <TableHeader>
@@ -304,7 +339,7 @@ export default function PerformancePage() {
                   <TableCell colSpan={9} className="py-4 px-6"><Skeleton className="h-10 w-full" /></TableCell>
                 </TableRow>
               ))
-            ) : reviews.map(review => {
+            ) : filteredReviews.map(review => {
               const avg = avgRating(review.ratings);
               return (
                 <TableRow key={review.id} className="transition-colors border-border">
@@ -339,9 +374,11 @@ export default function PerformancePage() {
             })}
           </TableBody>
         </Table>
-        {!loading && reviews.length === 0 && (
+        {!loading && filteredReviews.length === 0 && (
           <div className="py-20 text-center">
-            <p className="text-sm text-muted-foreground">Brak wystawionych ocen.</p>
+            <p className="text-sm text-muted-foreground">
+              {searchTerm ? 'Brak wyników wyszukiwania.' : 'Brak wystawionych ocen.'}
+            </p>
           </div>
         )}
       </Card>

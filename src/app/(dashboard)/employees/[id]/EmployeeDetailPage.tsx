@@ -2,7 +2,6 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import Image from 'next/image';
-import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, Mail, Building2, Calendar, Edit2, Check, X,
   Clock, Star, BookOpen, Camera, Loader2,
@@ -54,8 +53,11 @@ const REVIEW_CATEGORIES: Record<string, string> = {
 };
 
 export default function EmployeeProfilePage() {
-  const { id } = useParams<{ id: string }>();
-  const router = useRouter();
+  const [id, setId] = useState('');
+
+  useEffect(() => {
+    setId(new URLSearchParams(window.location.search).get('id') ?? '');
+  }, []);
 
   const [emp, setEmp]           = useState<Employee | null>(null);
   const [leaves, setLeaves]     = useState<Leave[]>([]);
@@ -153,7 +155,7 @@ export default function EmployeeProfilePage() {
 
       {/* Back */}
       <button
-        onClick={() => router.back()}
+        onClick={() => window.history.back()}
         className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft size={14} /> Pracownicy
@@ -588,7 +590,7 @@ function AttendanceSummary({ records }: { records: Attendance[] }) {
                   ticks={[0, 2, 4, 6, 8, 10]}
                 />
                 <Tooltip
-                  cursor={{ fill: 'hsl(var(--accent))', radius: 6 }}
+                  cursor={false}
                   content={({ active, payload, label }) => {
                     if (!active || !payload?.length) return null;
                     const h = payload[0].value as number;

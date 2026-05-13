@@ -1,25 +1,27 @@
 import { db } from "@/lib/firebase";
-import { 
-  collection, 
-  getDocs, 
-  getDoc,
-  doc,
-  addDoc, 
-  updateDoc,
-  query, 
-  where, 
-  orderBy, 
-  limit 
+import {
+  collection,
+  getDocs,
+  addDoc,
+  query,
+  where,
+  orderBy,
 } from "firebase/firestore";
 import { Review } from "@/types";
 
 const COLLECTION_NAME = "reviews";
 
-export const getEmployeeReviews = async (employeeId: string): Promise<Review[]> => {
+export const getEmployeeReviews = async (email: string): Promise<Review[]> => {
   const col = collection(db, COLLECTION_NAME);
-  const q = query(col, where("employeeId", "==", employeeId), orderBy("period", "desc"));
+  const q = query(
+    col,
+    where("revieweeEmail", "==", email),
+    where("status", "==", "submitted"),
+  );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
+  return snapshot.docs
+    .map(doc => ({ id: doc.id, ...doc.data() } as Review))
+    .sort((a, b) => (b.period ?? '').localeCompare(a.period ?? ''));
 };
 
 export const getAllReviews = async (): Promise<Review[]> => {

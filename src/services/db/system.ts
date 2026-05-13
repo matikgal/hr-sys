@@ -49,7 +49,14 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
 
   // 1. Basic Stats
   const empCount = await getCountFromServer(employeesCol);
-  const candCount = await getCountFromServer(query(candidatesCol, where("stage", "!=", "rejected")));
+  
+  let activeRecruitments = 0;
+  try {
+    const candCount = await getCountFromServer(query(candidatesCol, where("stage", "!=", "rejected")));
+    activeRecruitments = candCount.data().count;
+  } catch (err) {
+    console.warn("Brak uprawnień do pobrania statystyk rekrutacji - pomijanie.");
+  }
   
   const todayAttendanceQ = query(attendanceCol, where("date", "==", today));
   const todayAttendanceSnap = await getDocs(todayAttendanceQ);
@@ -173,7 +180,7 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
     totalEmployees: empCount.data().count,
     presentToday,
     pendingLeaves,
-    activeRecruitments: candCount.data().count,
+    activeRecruitments,
     anomalies,
     chartData,
     recentActivity: sortedActivity

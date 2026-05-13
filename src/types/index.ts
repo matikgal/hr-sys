@@ -78,6 +78,8 @@ export interface Job {
   title: string;
   departmentId: string;
   status: 'open' | 'closed';
+  salaryRange?: string;
+  description?: string;
 }
 
 export interface Candidate {
@@ -90,12 +92,14 @@ export interface Candidate {
   score: number;
   notes?: string;
   phone?: string;
+  cvUrl?: string;
   appliedAt?: string;
 }
 
 export interface Review {
   id: string;
   employeeId: string;
+  revieweeEmail: string;
   reviewerId: string;
   period: string; // e.g. '2026-Q1'
   ratings: Record<string, number>;
@@ -145,6 +149,20 @@ export interface HRDocument {
   createdAt: string;
 }
 
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  assigneeId: string;
+  assigneeEmail: string;
+  assignerId: string;
+  assignerName: string;
+  dueDate: string;
+  priority: 'low' | 'medium' | 'high';
+  status: 'todo' | 'in_progress' | 'done';
+  createdAt: string;
+}
+
 export interface AuditLog {
   id: string;
   action: string;
@@ -165,16 +183,29 @@ export interface Position {
   level?: 'junior' | 'mid' | 'senior' | 'lead' | 'manager' | 'director';
 }
 
+export interface Conversation {
+  id: string;
+  participants: string[];
+  participantNames: Record<string, string>;
+  participantAvatars: Record<string, string>;
+  lastMessage?: string | null;
+  lastMessageAt?: string | null;
+  lastMessageSenderId?: string | null;
+  unreadCounts: Record<string, number>;
+}
+
+export interface ChatMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  text: string;
+  createdAt: string | null;
+}
+
 export interface UserSettings {
   uid: string;
   displayName: string;
   theme: 'light' | 'dark' | 'system';
   language: 'pl' | 'en';
-  notifications: {
-    email: boolean;
-    push: boolean;
-    leaveRequests: boolean;
-    attendance: boolean;
-  };
   companyName: string;
 }
