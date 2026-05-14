@@ -11,9 +11,11 @@
   },
   "hosting": {
     "public": "out",
+    "cleanUrls": true,
+    "trailingSlash": false,
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
-      { "source": "**", "destination": "/404.html" }
+      { "source": "**", "destination": "/index.html" }
     ]
   },
   "emulators": {

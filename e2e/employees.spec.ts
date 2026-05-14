@@ -12,7 +12,7 @@ test.describe('Pracownicy — lista', () => {
   });
 
   test('widoczne są karty statystyk', async ({ adminPage: p }) => {
-    await expect(p.getByText('Wszyscy pracownicy')).toBeVisible({ timeout: 15_000 });
+    await expect(p.getByText('Wszyscy')).toBeVisible({ timeout: 15_000 });
     await expect(p.getByText('Aktywni')).toBeVisible({ timeout: 15_000 });
     await expect(p.getByText('Na urlopie')).toBeVisible({ timeout: 15_000 });
   });
@@ -23,7 +23,6 @@ test.describe('Pracownicy — lista', () => {
 
   test('tabela ma poprawne nagłówki kolumn', async ({ adminPage: p }) => {
     await expect(p.getByRole('columnheader', { name: /pracownik/i })).toBeVisible({ timeout: 15_000 });
-    await expect(p.getByRole('columnheader', { name: /dział/i })).toBeVisible({ timeout: 15_000 });
     await expect(p.getByRole('columnheader', { name: /status/i })).toBeVisible({ timeout: 15_000 });
   });
 

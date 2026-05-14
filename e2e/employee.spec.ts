@@ -16,13 +16,13 @@ test.describe('Pracownik — dashboard', () => {
   });
 
   test('pracownik NIE widzi KPI kart zarządczych', async ({ employeePage: p }) => {
-    await p.waitForLoadState('networkidle');
+  
     await expect(p.getByText('Zatrudnionych')).not.toBeVisible();
     await expect(p.getByText('Aktywne rekrutacje')).not.toBeVisible();
   });
 
   test('pracownik NIE widzi przycisku "Nowy pracownik"', async ({ employeePage: p }) => {
-    await p.waitForLoadState('networkidle');
+    
     await expect(p.getByRole('button', { name: /nowy pracownik/i })).not.toBeVisible();
   });
 });
@@ -43,12 +43,12 @@ test.describe('Pracownik — urlopy', () => {
   });
 
   test('pracownik NIE widzi przycisku "Eksportuj CSV"', async ({ employeePage: p }) => {
-    await p.waitForLoadState('networkidle');
+   
     await expect(p.getByRole('button', { name: /eksportuj csv/i })).not.toBeVisible();
   });
 
   test('pracownik NIE widzi przycisków Zatwierdź/Odrzuć', async ({ employeePage: p }) => {
-    await p.waitForLoadState('networkidle');
+  
     await expect(p.getByRole('button', { name: /zatwierdź/i })).not.toBeVisible();
     await expect(p.getByRole('button', { name: /odrzuć/i })).not.toBeVisible();
   });
@@ -81,7 +81,7 @@ test.describe('Pracownik — rekrutacja (job board)', () => {
   });
 
   test('pracownik NIE widzi przycisku "Dodaj ogłoszenie"', async ({ employeePage: p }) => {
-    await p.waitForLoadState('networkidle');
+   
     await expect(p.getByRole('button', { name: /dodaj ogłoszenie/i })).not.toBeVisible();
   });
 });

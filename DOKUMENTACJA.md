@@ -18,6 +18,7 @@ System zarządzania zasobami ludzkimi klasy SaaS zbudowany jako projekt studenck
 10. [CI/CD](#cicd)
 11. [Uruchomienie lokalne](#uruchomienie-lokalne)
 12. [Zmienne środowiskowe](#zmienne-środowiskowe)
+13. [Changelog](#changelog)
 
 ---
 
@@ -730,3 +731,108 @@ Po uruchomieniu `/admin/seed`:
 | `hr@hr.local` | `Hr1234!` | hr |
 | `manager@hr.local` | `Manager1!` | manager |
 | `employee@hr.local` | `Employee1!` | employee |
+
+---
+
+## Changelog
+
+### Sesja 2 — maj 2026
+
+#### Rekrutacja — widok dualny
+
+- Pracownik widzi tablicę ogłoszeń z kartami ofert pracy i przyciskiem „Aplikuj"
+- Formularz aplikacji: upload CV (PDF) do Firebase Storage (`/cvs/` bucket), imię, nazwisko, email, telefon
+- Sekcja „Moje aplikacje" — pracownik widzi swoje zgłoszenia z bieżącym etapem
+- HR/Admin widzi ATS Kanban (bez zmian w UX)
+- Arkusz kandydata w ATS zawiera link do pobrania CV
+- Pole opisu stanowiska (`description`) w formularzu tworzenia ogłoszenia
+- `getActiveJobs` — usunięto `orderBy("title")`, sortowanie w JS (uniknięcie composite index)
+
+#### Oceny pracownicze — naprawy uprawnień
+
+- Pracownik **nie może** się sam oceniać — przycisk „Nowa ocena" ukryty dla roli `employee`
+- Lista pracowników w formularzu oceny wyklucza zalogowanego użytkownika
+- Pracownik widzi własne oceny — reguła Firestore oparta o `revieweeEmail` (pole denormalizowane w dokumencie recenzji)
+- Reguła: `resource.data.revieweeEmail == request.auth.token.email`
+- Dodano `revieweeEmail` do seeda bazy danych
+
+#### Autentykacja — displayName
+
+- `auth-context.tsx` pobiera `displayName` z Firestore (`firstName + lastName`), nie z Firebase Auth
+- Naprawia błąd: wszyscy użytkownicy wyświetlali się jako „admin"
+
+#### Reguły Firestore
+
+- Globalny bypass dla `admin@hr.local`: `match /{document=**} { allow read, write: if ... }`
+- Kandydaci: `allow create: if isAuthenticated()` — każdy zalogowany może aplikować
+- Recenzje: reguła odczytu dla pracownika przez `revieweeEmail` bez `get()` (wydajność)
+
+#### Seed bazy danych
+
+- Naprawiono błąd „Missing or insufficient permissions" podczas seedowania
+- Seed ponownie loguje się jako admin wewnątrz pętli tworzenia kont demo
+- Wszystkie seeded recenzje zawierają pole `revieweeEmail`
+
+#### Storage — upload CV
+
+- Nowy serwis `src/services/storage/cv.ts` — upload PDF do Firebase Storage
+- Reguła Storage: `allow create: if isAuthenticated() && size <= 10MB && contentType == application/pdf`
+
+#### Poprawki techniczne
+
+- Usunięto `orderBy` ze wszystkich zapytań łączonych z `where` (uniknięcie wymagania composite index)
+- Pola opcjonalne w Firestore: conditional spread `...(field ? { field } : {})` zamiast `undefined`
+- `useReviews(employeeId)`: `undefined` = wyłączone, `null` = wszystkie recenzje (manager+), `string` = recenzje pracownika
+
+---
+
+### Sesja 3 — maj 2026
+
+#### Moduł Zadania (`/tasks`)
+
+- Nowa kolekcja Firestore `tasks` z polami: `title`, `description`, `assigneeId`, `assigneeEmail`, `assignerId`, `assignerName`, `dueDate`, `priority` (low/medium/high), `status` (todo/in_progress/done), `createdAt`
+- Nowy serwis `src/services/db/tasks.ts` — `getAllTasks`, `getMyTasks(email)`, `createTask`, `updateTaskStatus`, `deleteTask`
+- Nowe hooki `src/hooks/use-tasks.ts` — `useMyTasks(email)`, `useCreateTask`, `useUpdateTaskStatus`, `useDeleteTask`
+- `useMyTasks(null)` → `getAllTasks` (manager+); `useMyTasks(email)` → `getMyTasks(email)` (pracownik)
+- Strona `src/app/(dashboard)/tasks/page.tsx` — karty zadań z klikaniem koła statusu (cykl: todo→in_progress→done→todo), filtry statusu/priorytetu, liczniki na górze, dialog tworzenia zadania (manager only)
+- Pracownik może tylko zmieniać `status`; manager tworzy i usuwa
+- Reguła Firestore: `allow update: if isManager() || (assigneeEmail == token.email && diff.hasOnly(['status']))`
+- Pozycja w sidebarze po „Oceny roczne"
+
+#### Naprawka — oceny pracownika w Firestore
+
+- Przyczyna błędu: zapytanie `where("employeeId", "==", id)` zwracało szkice recenzji, które nie spełniały reguły (brak `revieweeEmail`), co powodowało odmowę całego zapytania
+- Fix: zapytanie przez `where("revieweeEmail", "==", email) + where("status", "==", "submitted")` — dokładnie pasuje do reguły Firestore
+- `useReviews(email: string | null)` — zmiana sygnatury; email dostępny natychmiastowo z auth context, bez czekania na listę pracowników
+- `employeeMap = useMemo(() => new Map(...), [employees])` — O(1) lookup zamiast O(n) `.find()` per render
+
+#### Rekrutacja — refaktoryzacja
+
+- `STAGES` skonsoldowany z `badgeLabel` i `color` — jeden obiekt zamiast 3 oddzielnych map
+- `deptMap` i `appliedJobIds` via `useMemo` z `Map`/`Set` — O(1) lookup
+- `candidatesByStage` Map budowany jednym przejściem (uwzględnia wyszukiwanie)
+- `queryKeys.recruitment.myApplications` dodany do `src/lib/query-keys.ts`
+- `useApplyForJob` invaliduje też klucz `myApplications` po sukcesie
+
+#### Dashboard — przebudowa (`/dashboard`)
+
+- Sekcja „Mój dzień" widoczna dla wszystkich ról — 5 kafelków:
+  - **Czas pracy** (`AttendanceTile`): żywy timer (`setInterval` 60s), przycisk clock-in/clock-out, zielone tło gdy na miejscu, shows godziny dzisiaj
+  - **Zadania** (`TasksTile`): liczba zadań do zrobienia, badge z przeterminowanymi, klik → `/tasks`
+  - **Urlopy** (`LeavesTile`): pozostałe dni urlopowe z `useLeaveBalance`, klik → `/leaves`
+  - **Szkolenia** (`TrainingsTile`): liczba ukończonych, ostrzeżenie o wygasających w 30 dni
+  - **Wiadomości** (`MessagesTile`): nieprzeczytane przez `getTotalUnread(uid)`, odświeża co 30s
+- Manager/HR/Admin dodatkowo widzą: KPI cards, wykresy (trend zatrudnienia, struktura działów), tabelę pracowników, panel wniosków urlopowych z przyciskami zatwierdź/odrzuć, ostatnią aktywność
+- `PersonalSection` znajduje `myEmployee` przez `user?.email` (nie przez `uid`)
+- `calcSessionHours(events, now)` — iteruje pary in/out, zwraca float godzin
+- `fmtHours(h)` — formatuje jako „Xg YYm"
+
+#### Chat — `getTotalUnread`
+
+- Nowa funkcja `getTotalUnread(uid)` w `src/services/db/chat.ts` — sumuje `unreadCounts[uid]` ze wszystkich konwersacji użytkownika
+
+#### Poprawki techniczne sesji 3
+
+- Usunięto zbędne importy z `src/services/db/performance.ts`
+- Wzorzec bez warunkowych hooków: `tasksEmail = canManage ? null : user?.email ?? null` — jeden hook obsługuje oba przypadki
+- Wszystkie `.find()` / `.some()` na listach per-render zastąpione `useMemo` + `Map`/`Set`
